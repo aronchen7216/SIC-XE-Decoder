@@ -3,12 +3,14 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-//Single Programmer Affidavit
-//I the undersigned promise that the attached assignment is my own work. 
-//While I was free to discuss ideas with others, the work contained is my own. 
-//I recognize that should this not be the case, I will be subject to penalties as outlined in the course syllabus. 
-//Your Name: Aron Chen 
-//Red ID: 825066119
+// Dual Programmer Affidavit
+// I the undersigned promise that the attached assignment is my own work. 
+// While I was free to discuss ideas with others, the work contained is my own. 
+// I recognize that should this not be the case, I will be subject to penalties as outlined in the course syllabus. 
+// Your Name: Aron Chen 
+// Red ID: 825066119
+// James Scheiber
+// 825617332
 
 
 // Define the data type INSTR
