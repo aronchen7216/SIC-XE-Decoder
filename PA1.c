@@ -1,0 +1,234 @@
+#include <stdio.h>
+#include <string.h>
+#include <stdbool.h>
+#include <stdlib.h>
+
+//Single Programmer Affidavit
+//I the undersigned promise that the attached assignment is my own work. 
+//While I was free to discuss ideas with others, the work contained is my own. 
+//I recognize that should this not be the case, I will be subject to penalties as outlined in the course syllabus. 
+//Your Name: Aron Chen 
+//Red ID: 825066119
+
+
+// Define the data type INSTR
+typedef unsigned int INSTR;
+
+
+const static bool format2[] = {
+    false,false,true,false,true,false,
+    false,true,false,false,true,false,
+    false,false,false,false,false,false,
+    false,false,false,false,false,false,
+    false,false,false,false,false,false,
+    true,false,false,false,true,false,
+    true,true,false,false,false,false,
+    false,false,false,false,false,false,
+    false,false,false,false,true,true,
+    false,false,false,true,false
+};
+
+
+// getINTR uses bitwise masking to the first two bit then finds the corresponding value index in
+// *[]ops then returns the same index in *mnemonics[], it also returns true is it's format 2
+INSTR getINSTR(const char *test, const char *ops[], const char *mnemonics[], int arraySize, char *mnemonic, bool *isFormat2) {
+   // Convert the string into integer
+   unsigned int testValue = (unsigned int)strtol(test, NULL, 16);
+
+   // Bitwise AND with FC0 then shift right by 4 bits
+   INSTR INSTRValue = (testValue & 0xFC0) >> 4;
+
+   // Search for INSTR value in ops[] and retrieve the corresponding mnemonic
+    for (int i = 0; i < arraySize; i++) {
+        if (INSTRValue == (INSTR)strtol(ops[i], NULL, 16)) {
+         strcpy(mnemonic, mnemonics[i]);
+        
+         // Determine if it's format 2
+         *isFormat2 = format2[i];
+         
+         return INSTRValue;
+        }
+    }
+
+    return 0;
+}
+
+// Finds OAT value by using bitwise maksing and returning simple, immediate, indirect, and unknown
+// depending on switch case
+char *getOAT(const char *test) {
+    // Convert the 4-digit hexadecimal string to an integer
+    unsigned int testValue = (unsigned int)strtol(test, NULL, 16);
+
+    // bitwise AND to get the last two bits
+    char oat = (char)(testValue & 0x30);
+   
+   // Chang OAT values to corresponding strings
+    switch (oat) {
+        case 0x00:
+            return "simple";
+        case 0x10:
+            return "immediate";
+        case 0x20:
+            return "indirect";
+        case 0x30:
+            return "simple";
+        default:
+            return "unknown";
+    }
+}
+
+// uses bitwise masking to get the E flag
+int getFORMAT(const char *test) {
+
+    unsigned int testValue = (unsigned int)strtol(test, NULL, 16);
+
+    // Bitwise operation and checks the last bit
+    if (testValue & 0x01) {
+        return 4;
+    } else {
+        return 3;
+    }
+}
+
+// Bitwise operation to get the TAAM, and returning depending on the switch case
+const char *getTAAM(const char *test) {
+   // Convert string into integer
+   unsigned int testValue = (unsigned int)strtol(test, NULL, 16);
+
+   // Bitwise masking with 0x0E
+   unsigned int result = (unsigned int)(testValue & 0x0E);
+
+    switch (result) {
+        case 0x00:
+            return "absolute";
+        case 0x02:
+            return "pc";
+        case 0x04:
+            return "base";
+        case 0x0A:
+            return "pc_indexed";
+        case 0x0C:
+            return "base_indexed";
+        default:
+            return "unknown";
+    }
+}
+
+
+const static char *ops[] = {
+    "18", "58", "90", "40", "B4", "28",
+    "88", "A0", "24", "64", "9C", "C4",
+    "C0", "F4", "3C", "30", "34", "38",
+    "48", "00", "68", "50", "70", "08",
+    "6C", "74", "04", "D0", "20", "60",
+    "98", "C8", "44", "D8", "AC", "4C",
+    "A4", "A8", "F0", "EC", "0C", "78",
+    "54", "80", "D4", "14", "7C", "E8",
+    "84", "10", "1C", "5C", "94", "B0",
+    "E0", "F8", "2C", "B8", "DC"
+};
+
+
+const static char *mnemonics[] = {
+    "ADD", "ADDF", "ADDR", "AND", "CLEAR", "COMP",
+    "COMPF", "COMPR", "DIV", "DIVF", "DIVR", "FIX",
+    "FLOAT", "HIO", "J", "JEQ", "JGT", "JLT",
+    "JSUB", "LDA", "LDB", "LDCH", "LDF", "LDL",
+    "LDS", "LDT", "LDX", "LPS", "MUL", "MULF",
+    "MULR", "NORM", "OR", "RD", "RMO", "RSUB",
+    "SHIFTL", "SHIFTR", "SIO", "SSK", "STA", "STB",
+    "STCH", "STF", "STI", "STL","STS", "STSW",
+    "STT", "STX", "SUB", "SUBF", "SUBR", "SVC",
+    "TD", "TIO", "TIX", "TIXR", "WD"
+};
+
+
+int main(int argc, char **argv) {
+// reads in the file
+char test[100];
+    FILE *ptr = fopen(argv[1], "r");
+    int line;
+    int k = 0;
+    // This while loop goes to the end of file, skipping the H line
+    while ((line = fgetc(ptr)) != EOF) {
+        if (line == 'H'){
+            while ((line = fgetc(ptr)) != '\n') {
+                if (line == EOF) {
+                    break; 
+                }
+            }
+        }
+        // if it starts with T however, it grabs the value until the \n, then
+        // puts the current value into k, which will be used when calling functions
+        else if (line == 'T') { 
+            fseek(ptr, 8, SEEK_CUR);
+            int c;
+            while ((c = fgetc(ptr)) != '\n') { 
+                if (c == EOF) {
+                    break; 
+                }
+            test[k] = c;
+            ++k;
+            }  
+        }
+    }
+
+    // creating file output
+    FILE *out_ptr = fopen("obj_struct.txt", "w");
+
+    fprintf(out_ptr, "%-20s%-7s%-10s%-15s%-10s\n", "INSTR", "FORMAT", "OAT", "TAAM", "OBJ");
+    
+    // Allocate space for the mnemonic 
+    char mnemonic[7]; 
+
+    // This while loop gets the menmonics first, determines if it's format 3,4 or 2, and then calls
+    // the funcitons above, then prints the results out
+    int i = 0;
+    while (i < strlen(test)) {
+        
+        // Create a character array for 3 hex digits, then copy 3 char into formatChunk
+        char formatChunk[4]; 
+        strncpy(formatChunk, &test[i], 3); 
+        formatChunk[3] = '\0'; 
+
+        // Pass the formatChunk to getFORMAT
+        int format = getFORMAT(formatChunk); 
+
+        // Extract the chunk based on the format
+        char chunk[10];
+
+        // Putting either 6 or 8 depending on the format
+        strncpy(chunk, &test[i], (format == 3) ? 6 : 8);
+        chunk[(format == 3) ? 6 : 8] = '\0';
+
+        // calls getINSTR 
+        INSTR result;
+        bool isFormat2 = false;
+        result = getINSTR(formatChunk, ops, mnemonics, sizeof(ops) / sizeof(ops[0]), mnemonic, &isFormat2);
+        
+        // It's format 2, so print only mnemonic and 4 hex digits
+        if (isFormat2) {
+            // Create a  array for 4 hex digits, then copy the first 4 char from chunk
+            char format2Chunk[5]; 
+            strncpy(format2Chunk, chunk, 4);
+            format2Chunk[4] = '\0'; 
+            
+            //Prints out the with the format 2
+            fprintf(out_ptr, "%-20s%-2d                                   %-20s\n", mnemonic, 2, format2Chunk);
+            // Increment by 4 
+            i += 4; 
+        
+        } else {
+            // Calls the function if it's format 3 and 4 and print out the result
+            const char *oat = getOAT(formatChunk); 
+            const char *taam = getTAAM(formatChunk); 
+            fprintf(out_ptr, "%-20s%-7d%-15s%-15s%-10s\n", mnemonic, format, oat, taam, chunk);
+            // Increment by 6 or 8 depending on the format
+            i += (format == 3) ? 6 : 8; 
+        }
+    }
+    // clsoe file
+    fclose(out_ptr);
+    fclose(ptr);
+    return 0;
+}
