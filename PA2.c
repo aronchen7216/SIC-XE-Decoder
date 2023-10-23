@@ -148,38 +148,49 @@ const static char *mnemonics[] = {
 int main(int argc, char **argv) {
 // reads in the file
 char test[100];
-    FILE *ptr = fopen(argv[1], "r");
-    int line;
-    int k = 0;
-    // This while loop goes to the end of file, skipping the H line
-    while ((line = fgetc(ptr)) != EOF) {
-        if (line == 'H'){
-            while ((line = fgetc(ptr)) != '\n') {
-                if (line == EOF) {
-                    break; 
-                }
+char pName[7];       // Array to store the characters from columns 2 to 7 and a null terminator
+char startAddress[7]; // Array to store the characters from columns 8 to 13 and a null terminator
+FILE *ptr = fopen(argv[1], "r");
+int line;
+int k = 0;
+
+// This while loop goes to the end of the file, processing lines based on their first character
+while ((line = fgetc(ptr)) != EOF) {
+    if (line == 'H') {
+        // Read columns 2 to 7 into pName
+        fread(pName, sizeof(char), 6, ptr);
+        pName[6] = '\0'; // Null-terminate to make it a valid string
+        
+        // Read columns 8 to 13 into startAddress
+        fread(startAddress, sizeof(char), 6, ptr);
+        startAddress[6] = '\0'; // Null-terminate to make it a valid string
+        
+        // Skip the rest of the line
+        while ((line = fgetc(ptr)) != '\n') {
+            if (line == EOF) {
+                break; 
             }
         }
-        // if it starts with T however, it grabs the value until the \n, then
-        // puts the current value into k, which will be used when calling functions
-        else if (line == 'T') { 
-            fseek(ptr, 8, SEEK_CUR);
-            int c;
-            while ((c = fgetc(ptr)) != '\n') { 
-                if (c == EOF) {
-                    break; 
-                }
+    }
+    else if (line == 'T') { 
+        fseek(ptr, 8, SEEK_CUR);
+        int c;
+        while ((c = fgetc(ptr)) != '\n') { 
+            if (c == EOF) {
+                break; 
+            }
             test[k] = c;
             ++k;
-            }  
-        }
+        }  
     }
+}
 
     // creating file output
-    FILE *out_ptr = fopen("obj_struct.txt", "w");
+    FILE *out_ptr = fopen("out.lst", "w");
 
-    fprintf(out_ptr, "%-20s%-7s%-10s%-15s%-10s\n", "INSTR", "FORMAT", "OAT", "TAAM", "OBJ");
-    
+    fprintf(out_ptr, "%-12s%-12s%-12s%-12s%-12s\n", "LOC", "Label", "Opcode", "Oprand", "ObjectCode");
+    fprintf(out_ptr, "%-12s%-12s%-12s%-12s\n", startAddress, pName, "START", startAddress);
+
     // Allocate space for the mnemonic 
     char mnemonic[7]; 
 
@@ -216,7 +227,7 @@ char test[100];
             format2Chunk[4] = '\0'; 
             
             //Prints out the with the format 2
-            fprintf(out_ptr, "%-20s%-2d                                   %-20s\n", mnemonic, 2, format2Chunk);
+            fprintf(out_ptr, "%-12s%-12s%-12s%-12s%-12s\n", "0000", "idk", mnemonic, "ADDR", format2Chunk);
             // Increment by 4 
             i += 4; 
         
@@ -224,11 +235,14 @@ char test[100];
             // Calls the function if it's format 3 and 4 and print out the result
             const char *oat = getOAT(formatChunk); 
             const char *taam = getTAAM(formatChunk); 
-            fprintf(out_ptr, "%-20s%-7d%-15s%-15s%-10s\n", mnemonic, format, oat, taam, chunk);
+            fprintf(out_ptr, "%-12s%-12s%-12s%-12s%-12s\n", "0000", "idk", mnemonic, "ADDR", chunk);
             // Increment by 6 or 8 depending on the format
             i += (format == 3) ? 6 : 8; 
         }
     }
+
+    fprintf(out_ptr, "%24s%-12s%-12s\n", "", "END", pName);
+
     // clsoe file
     fclose(out_ptr);
     fclose(ptr);

@@ -1,4 +1,5 @@
-LOC         idk         INSTR       ADDR        OPCODE      
+LOC         Label       Opcode      Oprand      ObjectCode  
+000000      Assign      START       000000      
 0000        idk         LDB         ADDR        691002C6    
 0000        idk         STL         ADDR        1722BF      
 0000        idk         LDA         ADDR        022FFF      
@@ -11,4 +12,5 @@ LOC         idk         INSTR       ADDR        OPCODE
 0000        idk         LDCH        ADDR        53AFEA      
 0000        idk         WD          ADDR        DF2FEA      
 0000        idk         LDA         ADDR        031002E3    
-0000        idk         LDA         ADDR        ˜8¸         
+0000        idk         LDA         ADDR        ¬7         
+                        END         Assign      
