@@ -240,7 +240,7 @@ int main(int argc, char **argv) {
 
 
     // TODO: remove the header line, it's not in the final output, but probably helps for prototyping :)
-    // fprintf(out_ptr, "%-5s%-12s%-12s%-12s%-12s\n", "LOC", "Label", "Opcode", "Operand", "ObjectCode");
+    fprintf(out_ptr, "%-5s%-12s%-12s%-12s%-12s\n", "LOC", "Label", "Opcode", "Operand", "ObjectCode");
     fprintf(out_ptr, "%04X %-12s%-12s%-12X\n", strtol(startAddress, NULL, 16), pName, "START", strtol(startAddress, NULL, 16));
 
 
