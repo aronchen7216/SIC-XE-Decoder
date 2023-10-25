@@ -154,6 +154,11 @@ FILE *ptr = fopen(argv[1], "r");
 int line;
 int k = 0;
 
+int LOC = 0x0;
+char spacing[] = "        ";
+char label[6] = "     ";
+char operand;
+
 // This while loop goes to the end of the file, processing lines based on their first character
 while ((line = fgetc(ptr)) != EOF) {
     if (line == 'H') {
@@ -188,8 +193,13 @@ while ((line = fgetc(ptr)) != EOF) {
     // creating file output
     FILE *out_ptr = fopen("out.lst", "w");
 
-    fprintf(out_ptr, "%-12s%-12s%-12s%-12s%-12s\n", "LOC", "Label", "Opcode", "Oprand", "ObjectCode");
-    fprintf(out_ptr, "%-12s%-12s%-12s%-12s\n", startAddress, pName, "START", startAddress);
+
+    // TODO: remove the header line, it's not in the final output, but probably helps for prototyping :)
+
+    fprintf(out_ptr, "%-12s%-12s%-12s%-12s%-12s\n", "LOC", "Label", "Opcode", "Operand", "ObjectCode");
+    fprintf(out_ptr, "%04X%s%-12s%-12s%-12X\n", strtol(startAddress, NULL, 16), spacing, pName, "START", strtol(startAddress, NULL, 16));
+
+
 
     // Allocate space for the mnemonic 
     char mnemonic[7]; 
@@ -227,17 +237,24 @@ while ((line = fgetc(ptr)) != EOF) {
             format2Chunk[4] = '\0'; 
             
             //Prints out the with the format 2
-            fprintf(out_ptr, "%-12s%-12s%-12s%-12s%-12s\n", "0000", "idk", mnemonic, "ADDR", format2Chunk);
-            // Increment by 4 
-            i += 4; 
+            fprintf(out_ptr, "%04X%s%-12s%-12s%-12s%-12s\n", LOC, spacing, label, mnemonic, operand, format2Chunk);
+            // Increment i by 4 and LOC by 2 (4 half bytes)
+            i += 4;
+            LOC += 2;
         
         } else {
             // Calls the function if it's format 3 and 4 and print out the result
             const char *oat = getOAT(formatChunk); 
             const char *taam = getTAAM(formatChunk); 
-            fprintf(out_ptr, "%-12s%-12s%-12s%-12s%-12s\n", "0000", "idk", mnemonic, "ADDR", chunk);
-            // Increment by 6 or 8 depending on the format
+
+            fprintf(out_ptr, "%04X%s%-12s%-12s%-12s%-12s\n", LOC, spacing, label, mnemonic, operand, chunk);
+            // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
             i += (format == 3) ? 6 : 8; 
+            LOC += (format == 3) ? 3 : 4; 
+        }
+
+        if (!strcmp("LDB", mnemonic)) {
+            fprintf(out_ptr, "%24s%-12s%-12s\n", "", "BASE", operand);
         }
     }
 
