@@ -148,8 +148,10 @@ const static char *mnemonics[] = {
 int main(int argc, char **argv) {
 // reads in the file
 char test[100];
-char pName[7];       // Array to store the characters from columns 2 to 7 and a null terminator
-char startAddress[7]; // Array to store the characters from columns 8 to 13 and a null terminator
+// Characters from columns 2 to 7 and a null terminator
+char pName[7];
+// Characters from columns 8 to 13 and a null terminator       
+char startAddress[7]; 
 FILE *ptr = fopen(argv[1], "r");
 int line;
 int k = 0;
@@ -181,7 +183,9 @@ while ((line = fgetc(ptr)) != EOF) {
             }
             test[k] = c;
             ++k;
-        }  
+        }
+        // need this to ensure that it is null terminated, so its a valid String 
+        test[k] = '\0'; 
     }
 }
 
@@ -235,9 +239,15 @@ while ((line = fgetc(ptr)) != EOF) {
             // Calls the function if it's format 3 and 4 and print out the result
             const char *oat = getOAT(formatChunk); 
             const char *taam = getTAAM(formatChunk); 
-            fprintf(out_ptr, "%-12s%-12s%-12s%-12s%-12s\n", "0000", "idk", mnemonic, "ADDR", chunk);
+            // Checks for format 4 to put in the + sign before opcode
+            if (format == 4) {
+                fprintf(out_ptr, "%-12s%-12s+%-11s%-12s%-12s\n", "0000", "idk", mnemonic, "ADDR", chunk);
+            } else {
+                fprintf(out_ptr, "%-12s%-12s%-12s%-12s%-12s\n", "0000", "idk", mnemonic, "ADDR", chunk);
+            }
+
             // Increment by 6 or 8 depending on the format
-            i += (format == 3) ? 6 : 8; 
+            i += (format == 3) ? 6 : 8;
         }
     }
 

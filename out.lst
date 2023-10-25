@@ -12,5 +12,4 @@ LOC         Label       Opcode      Oprand      ObjectCode
 0000        idk         LDCH        ADDR        53AFEA      
 0000        idk         WD          ADDR        DF2FEA      
 0000        idk         +LDA        ADDR        031002E3    
-0000        idk         LDA         ADDR        ,·Á       
                         END         Assign      
