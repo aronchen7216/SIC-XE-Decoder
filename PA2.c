@@ -117,6 +117,45 @@ const char *getTAAM(const char *test) {
 }
 
 
+const char *getOperand(const char *chunk, int format, int LOC, int lastBASE, int lastX, const char *oat, const char *taam) {
+    if (format == 3){
+        char *operandChar = (char*) malloc(3);
+        int operand = strtol(chunk, NULL, 16);
+        operand = operand & 0xFFF;
+
+        // skeleton for operand calculation
+        if (!strcmp(oat, "simple")) {
+            // ta = disp + (pc or b)
+            if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
+                // ta = disp + pc
+                operand += (LOC + 3); // LOC hasn't been incremented when it is passed to this function
+            } else if (!strcmp(taam, "base") || !strcmp(taam, "base_indexed")) {
+                operand += lastBASE;
+            } else {
+                // direct, ta = disp
+            }
+        } else if (!strcmp(oat, "immediate")) {
+            // ta = ta
+        } else {
+            // indirect, memory access, ((TA))
+        }
+
+        if (sizeof(taam) > 9) {
+            // indexed so add lastx
+            operand += lastX;
+        }
+
+        snprintf(operandChar, sizeof(operandChar), "%04X", operand);
+        return operandChar;
+    } else {
+        // copy last 4 hex digits from value for TA
+        char *operand = (char*) malloc(4);
+        strncpy(operand, chunk + 4, 4);
+        return operand;
+    }
+}
+
+
 const static char *ops[] = {
     "18", "58", "90", "40", "B4", "28",
     "88", "A0", "24", "64", "9C", "C4",
@@ -146,58 +185,58 @@ const static char *mnemonics[] = {
 
 
 int main(int argc, char **argv) {
-// reads in the file
-char test[100];
-char pName[7];       // Array to store the characters from columns 2 to 7 and a null terminator
-char startAddress[7]; // Array to store the characters from columns 8 to 13 and a null terminator
-FILE *ptr = fopen(argv[1], "r");
-int line;
-int k = 0;
+    // reads in the file
+    char test[100];
+    char pName[7];       // Array to store the characters from columns 2 to 7 and a null terminator
+    char startAddress[7]; // Array to store the characters from columns 8 to 13 and a null terminator
+    FILE *ptr = fopen(argv[1], "r");
+    int line;
+    int k = 0;
 
-int LOC = 0x0;
-char spacing[] = "        ";
-char label[6] = "     ";
-char operand;
+    int LOC = 0x0;
+    char label[6] = "     ";
+    char operand;
+    int lastBASE = 0x0;
+    int lastX = 0x0;
 
-// This while loop goes to the end of the file, processing lines based on their first character
-while ((line = fgetc(ptr)) != EOF) {
-    if (line == 'H') {
-        // Read columns 2 to 7 into pName
-        fread(pName, sizeof(char), 6, ptr);
-        pName[6] = '\0'; // Null-terminate to make it a valid string
-        
-        // Read columns 8 to 13 into startAddress
-        fread(startAddress, sizeof(char), 6, ptr);
-        startAddress[6] = '\0'; // Null-terminate to make it a valid string
-        
-        // Skip the rest of the line
-        while ((line = fgetc(ptr)) != '\n') {
-            if (line == EOF) {
-                break; 
+    // This while loop goes to the end of the file, processing lines based on their first character
+    while ((line = fgetc(ptr)) != EOF) {
+        if (line == 'H') {
+            // Read columns 2 to 7 into pName
+            fread(pName, sizeof(char), 6, ptr);
+            pName[6] = '\0'; // Null-terminate to make it a valid string
+            
+            // Read columns 8 to 13 into startAddress
+            fread(startAddress, sizeof(char), 6, ptr);
+            startAddress[6] = '\0'; // Null-terminate to make it a valid string
+            
+            // Skip the rest of the line
+            while ((line = fgetc(ptr)) != '\n') {
+                if (line == EOF) {
+                    break; 
+                }
             }
         }
+        else if (line == 'T') { 
+            fseek(ptr, 8, SEEK_CUR);
+            int c;
+            while ((c = fgetc(ptr)) != '\n') { 
+                if (c == EOF) {
+                    break; 
+                }
+                test[k] = c;
+                ++k;
+            }  
+        }
     }
-    else if (line == 'T') { 
-        fseek(ptr, 8, SEEK_CUR);
-        int c;
-        while ((c = fgetc(ptr)) != '\n') { 
-            if (c == EOF) {
-                break; 
-            }
-            test[k] = c;
-            ++k;
-        }  
-    }
-}
 
     // creating file output
     FILE *out_ptr = fopen("out.lst", "w");
 
 
     // TODO: remove the header line, it's not in the final output, but probably helps for prototyping :)
-
-    fprintf(out_ptr, "%-12s%-12s%-12s%-12s%-12s\n", "LOC", "Label", "Opcode", "Operand", "ObjectCode");
-    fprintf(out_ptr, "%04X%s%-12s%-12s%-12X\n", strtol(startAddress, NULL, 16), spacing, pName, "START", strtol(startAddress, NULL, 16));
+    fprintf(out_ptr, "%-5s%-12s%-12s%-12s%-12s\n", "LOC", "Label", "Opcode", "Operand", "ObjectCode");
+    fprintf(out_ptr, "%04X %-12s%-12s%-12X\n", strtol(startAddress, NULL, 16), pName, "START", strtol(startAddress, NULL, 16));
 
 
 
@@ -228,6 +267,8 @@ while ((line = fgetc(ptr)) != EOF) {
         INSTR result;
         bool isFormat2 = false;
         result = getINSTR(formatChunk, ops, mnemonics, sizeof(ops) / sizeof(ops[0]), mnemonic, &isFormat2);
+
+        const char *operand;
         
         // It's format 2, so print only mnemonic and 4 hex digits
         if (isFormat2) {
@@ -237,7 +278,7 @@ while ((line = fgetc(ptr)) != EOF) {
             format2Chunk[4] = '\0'; 
             
             //Prints out the with the format 2
-            fprintf(out_ptr, "%04X%s%-12s%-12s%-12s%-12s\n", LOC, spacing, label, mnemonic, operand, format2Chunk);
+            fprintf(out_ptr, "%04X %-12s%-12s%-12s%-12s\n", LOC, label, mnemonic, operand, format2Chunk);
             // Increment i by 4 and LOC by 2 (4 half bytes)
             i += 4;
             LOC += 2;
@@ -245,20 +286,26 @@ while ((line = fgetc(ptr)) != EOF) {
         } else {
             // Calls the function if it's format 3 and 4 and print out the result
             const char *oat = getOAT(formatChunk); 
-            const char *taam = getTAAM(formatChunk); 
+            const char *taam = getTAAM(formatChunk);
+            operand = getOperand(chunk, format, LOC, lastBASE, lastX, oat, taam);
 
-            fprintf(out_ptr, "%04X%s%-12s%-12s%-12s%-12s\n", LOC, spacing, label, mnemonic, operand, chunk);
+            fprintf(out_ptr, "%04X %-12s%-12s%-12s%-12s\n", LOC, label, mnemonic, operand, chunk);
             // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
             i += (format == 3) ? 6 : 8; 
             LOC += (format == 3) ? 3 : 4; 
         }
 
+        // TODO: may need to alter if + is part of string at this point
         if (!strcmp("LDB", mnemonic)) {
-            fprintf(out_ptr, "%24s%-12s%-12s\n", "", "BASE", operand);
+            long lastBASE = strtol(operand, NULL, 16);
+            fprintf(out_ptr, "%17s%-12s%-12s\n", "", "BASE", operand);
+        } else if (!strcmp("LDX", mnemonic)) {
+            long lastX = strtol(operand, NULL, 16);
+            // printf("%x\n", lastX);
         }
     }
 
-    fprintf(out_ptr, "%24s%-12s%-12s\n", "", "END", pName);
+    fprintf(out_ptr, "%17s%-12s%-12s\n", "", "END", pName);
 
     // clsoe file
     fclose(out_ptr);
