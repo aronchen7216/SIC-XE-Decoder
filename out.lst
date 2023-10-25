@@ -1,6 +1,6 @@
 LOC         Label       Opcode      Oprand      ObjectCode  
 000000      Assign      START       000000      
-0000        idk         LDB         ADDR        691002C6    
+0000        idk         +LDB        ADDR        691002C6    
 0000        idk         STL         ADDR        1722BF      
 0000        idk         LDA         ADDR        022FFF      
 0000        idk         CLEAR       ADDR        B400        
@@ -8,9 +8,9 @@ LOC         Label       Opcode      Oprand      ObjectCode
 0000        idk         LDA         ADDR        000100      
 0000        idk         LDX         ADDR        050000      
 0000        idk         LDA         ADDR        01E32F      
-0000        idk         TIO         ADDR        FA332FFA    
+0000        idk         +TIO        ADDR        FA332FFA    
 0000        idk         LDCH        ADDR        53AFEA      
 0000        idk         WD          ADDR        DF2FEA      
-0000        idk         LDA         ADDR        031002E3    
-0000        idk         LDA         ADDR        ¬7         
+0000        idk         +LDA        ADDR        031002E3    
+0000        idk         LDA         ADDR        ,·Á       
                         END         Assign      
