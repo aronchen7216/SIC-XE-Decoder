@@ -187,8 +187,10 @@ const static char *mnemonics[] = {
 int main(int argc, char **argv) {
     // reads in the file
     char test[100];
-    char pName[7];       // Array to store the characters from columns 2 to 7 and a null terminator
-    char startAddress[7]; // Array to store the characters from columns 8 to 13 and a null terminator
+    // Characters from columns 2 to 7 and a null terminator
+    char pName[7];
+    // Characters from columns 8 to 13 and a null terminator       
+    char startAddress[7]; 
     FILE *ptr = fopen(argv[1], "r");
     int line;
     int k = 0;
@@ -226,16 +228,19 @@ int main(int argc, char **argv) {
                 }
                 test[k] = c;
                 ++k;
-            }  
+            }
+            // need this to ensure that it is null terminated, so its a valid String 
+            test[k] = '\0'; 
         }
     }
+    
 
     // creating file output
     FILE *out_ptr = fopen("out.lst", "w");
 
 
     // TODO: remove the header line, it's not in the final output, but probably helps for prototyping :)
-    fprintf(out_ptr, "%-5s%-12s%-12s%-12s%-12s\n", "LOC", "Label", "Opcode", "Operand", "ObjectCode");
+    // fprintf(out_ptr, "%-5s%-12s%-12s%-12s%-12s\n", "LOC", "Label", "Opcode", "Operand", "ObjectCode");
     fprintf(out_ptr, "%04X %-12s%-12s%-12X\n", strtol(startAddress, NULL, 16), pName, "START", strtol(startAddress, NULL, 16));
 
 
@@ -285,11 +290,25 @@ int main(int argc, char **argv) {
         
         } else {
             // Calls the function if it's format 3 and 4 and print out the result
-            const char *oat = getOAT(formatChunk); 
+            const char *oat = getOAT(formatChunk);
             const char *taam = getTAAM(formatChunk);
             operand = getOperand(chunk, format, LOC, lastBASE, lastX, oat, taam);
 
-            fprintf(out_ptr, "%04X %-12s%-12s%-12s%-12s\n", LOC, label, mnemonic, operand, chunk);
+            // Operand Sign
+            char operandSign[2] = ""; 
+            
+            // Checking what the Operand Sign should be by checkign the OAT "" by default
+            if (strcmp(oat, "immediate") == 0) {
+                strcpy(operandSign, "#");
+            } else if (strcmp(oat, "indirect") == 0) {
+                strcpy(operandSign, "@");
+            }  
+
+            if (format == 4) {
+                fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
+            } else {
+                fprintf(out_ptr, "%04X %-12s%-12s%s%-12s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
+            }
             // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
             i += (format == 3) ? 6 : 8; 
             LOC += (format == 3) ? 3 : 4; 
