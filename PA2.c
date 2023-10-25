@@ -239,11 +239,22 @@ while ((line = fgetc(ptr)) != EOF) {
             // Calls the function if it's format 3 and 4 and print out the result
             const char *oat = getOAT(formatChunk); 
             const char *taam = getTAAM(formatChunk); 
+            
+            // Operand Sign
+            char operandSign[2] = ""; 
+            
+            // Checking what the Operand Sign should be by checkign the OAT "" by default
+            if (strcmp(oat, "immediate") == 0) {
+                strcpy(operandSign, "#");
+            } else if (strcmp(oat, "indirect") == 0) {
+                strcpy(operandSign, "@");
+            }            
+
             // Checks for format 4 to put in the + sign before opcode
             if (format == 4) {
-                fprintf(out_ptr, "%-12s%-12s+%-11s%-12s%-12s\n", "0000", "idk", mnemonic, "ADDR", chunk);
+                fprintf(out_ptr, "%-12s%-12s+%-11s%s%-11s%-12s\n", "0000", "idk", mnemonic, operandSign, "ADDR", chunk);
             } else {
-                fprintf(out_ptr, "%-12s%-12s%-12s%-12s%-12s\n", "0000", "idk", mnemonic, "ADDR", chunk);
+                fprintf(out_ptr, "%-12s%-12s%-12s%s%-12s%-11s\n", "0000", "idk", mnemonic, operandSign, "ADDR", chunk);
             }
 
             // Increment by 6 or 8 depending on the format
