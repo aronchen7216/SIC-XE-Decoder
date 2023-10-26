@@ -1,11 +1,15 @@
-0000 SUM         START       0           
-0000             LDX         #0000        050000      
-0003             LDA         001A        032014      
-0006             +LDB        #178D       6910178D    
-                 BASE        178D        
-000A             ADD         001D        1BA010      
-000D             ADD         0000        1BC000      
-0010             TIX         001A        2F2007      
-0013             JLT         100A        3B2FF4      
-0016             +STA        2EFD       0F102EFD    
-                 END         SUM         
+0000 Assign      START       0           
+0000             +LDB        #02C6       691002C6    
+                 BASE        02C6        
+0004             STL         02C6        1722BF      
+0007             LDA         @0FFF        022FFF      
+000A             CLEAR       0FFF        B400        
+000C             SIO         #0500        F10500      
+000F             LDA         0100        000100      
+0012             LDX         #0000        050000      
+0015             LDA         #032F        01E32F      
+0018             +TIO        @2FFA       FA332FFA    
+001C             LDCH        1009        53AFEA      
+001F             WD          100C        DF2FEA      
+0022             +LDA        02E3       031002E3    
+                 END         Assign      
