@@ -1,15 +1,17 @@
 0000 Assign      START       0           
-0000             +LDB        #02C6       691002C6    
+0000 FIRST       +LDB        #02C6       691002C6    
                  BASE        02C6        
 0004             STL         02C6        1722BF      
 0007             LDA         @0FFF        022FFF      
 02C7             CLEAR       A           B400        
 02C9             SIO         #0500        F10500      
-02CC             LDA         0100        000100      
-02CF             LDX         #0000        050000      
-02D2             LDA         #032F        01E32F      
-02D5             +TIO        @2FFA       FA332FFA    
-02D9             LDCH        12C6        53AFEA      
-02DC             WD          12C9        DF2FEA      
-02DF             +LDA        02E3       031002E3    
+02CC VDEV        BYTE        X'F1'       F1          
+02CD             LDA         0100        000100      
+02D0             LDX         #0000        050000      
+02D3 WDEV        BYTE        X'000001'   000001      
+02D6             LDA         #032F        01E32F      
+02D9             +TIO        @2FFA       FA332FFA    
+02DD             LDCH        12CA        53AFEA      
+02E0             WD          12CD        DF2FEA      
+02E3             +LDA        02E3       031002E3    
                  END         Assign      
