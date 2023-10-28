@@ -196,10 +196,13 @@ int main(int argc, char **argv) {
     char startAddress[7];
     // Opens the file 
     FILE *ptr = fopen(argv[1], "r");
+    FILE *symptr = fopen(argv[2], "r");
     // creating file output
     FILE *out_ptr = fopen("out.lst", "w");
     int line;
     int k = 0;
+    int symbolRowCountTop = 0;
+    int symbolRowCountBottom = 0;
 //********************************************************************************************
 
 // Declaring for main function to run
@@ -216,6 +219,72 @@ int main(int argc, char **argv) {
 
 // THIS IS TO READ/RUN THE PROGAM
 //********************************************************************************************
+
+    int section = 0;
+    while ((line = fgetc(symptr)) != EOF) {
+        if (section == 0){
+            if (line == *"\n"){
+                symbolRowCountTop += 1;
+            } else if (line == *"N"){
+                section += 1;
+            }
+        } else {
+            if (line == *"\n"){
+                symbolRowCountBottom += 1;
+            }
+        }
+    }
+
+    fclose(symptr);
+    symptr = fopen(argv[2], "r");
+
+    // Row count correction for --- and header lines
+    symbolRowCountTop -= 3;
+    symbolRowCountBottom -= 2;
+
+    char symbolsTopChars[symbolRowCountTop][10];
+    char symbolsTopAddress[symbolRowCountTop][10];
+
+    char symbolsBottomChars[symbolRowCountBottom][10];
+    char symbolsBottomConst[symbolRowCountBottom][10];
+    char symbolsBottomLength[symbolRowCountBottom][10];
+    char symbolsBottomAddress[symbolRowCountBottom][10];
+
+    section = 0;
+    int lineCounter = 0;
+    int rowCounter = 0;
+    char symLine[100];
+    char firstSixCharacters[6];
+    while(fgets(symLine, sizeof(symLine), symptr)){
+        char *to = (char*) malloc(6);
+		strncpy(to, symLine, 6);
+        if (strcmp(to, "Symbol") && strcmp(to, "------") && strcmp(to, "\n")){
+            if (!strcmp(to, "Name  ")) {
+                section += 1;
+                rowCounter = 0;
+            } else if (section == 0) {
+                char* token = strtok(symLine, " ");
+                strcpy(symbolsTopChars[rowCounter], token);
+                token = strtok(NULL, " ");
+                strcpy(symbolsTopAddress[rowCounter], token);
+                rowCounter += 1;
+            } else if (section == 1) {
+                char* token = strtok(symLine, " ");
+                strcpy(symbolsBottomChars[rowCounter], token);
+                token = strtok(NULL, " ");
+                strcpy(symbolsBottomConst[rowCounter], token);
+                token = strtok(NULL, " ");
+                strcpy(symbolsBottomLength[rowCounter], token);
+                token = strtok(NULL, " ");
+                strcpy(symbolsBottomAddress[rowCounter], token);
+                symbolsBottomAddress[rowCounter][ 6 ] = *"\0";
+                rowCounter += 1;
+            }
+        }
+        
+    }
+
+
     // This while loop goes to the end of the file, processing lines based on their first character
     while ((line = fgetc(ptr)) != EOF) {
         if (line == 'H') {
@@ -261,7 +330,7 @@ int main(int argc, char **argv) {
             //******************************************************************************************************************
             // need this to ensure that it is null terminated, so its a valid String 
             test[k] = '\0';
-            printf("THIS IS WHAT IS IN TEST: %s\n", test);
+            // printf("THIS IS WHAT IS IN TEST: %s\n", test);
 
             int i = 0;
             // This while loop gets the menmonics first, determines if it's format 3,4 or 2, and then calls
@@ -289,7 +358,21 @@ int main(int argc, char **argv) {
                 result = getINSTR(formatChunk, ops, mnemonics, sizeof(ops) / sizeof(ops[0]), mnemonic, &isFormat2);
 
                 const char *operand;
-        
+
+                char LOC_char[10];
+    			snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
+
+                for (int i = 0; i < symbolRowCountTop; i++){
+                    if (!(strcmp(symbolsTopAddress[i], LOC_char))){
+                        snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
+                        // label = symbolsTopChars[i];
+                        strcpy(label, symbolsTopChars[i]);
+                        // fprintf(out_ptr, "%04X %s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[i], "BYTE", symbolsBottomConst[i]);
+                        // LOC += atoi(symbolsBottomLength[i]) / 2;
+                    }
+                }
+
+
                 // It's format 2, so print only mnemonic and 4 hex digits
                 if (isFormat2) {
                     // Create a  array for 4 hex digits, then copy the first 4 char from chunk
@@ -351,7 +434,6 @@ int main(int argc, char **argv) {
                     LOC += (format == 3) ? 3 : 4; 
                 }
 
-
                 // TODO: may need to alter if + is part of string at this point
                 if (!strcmp("LDB", mnemonic)) {
                     lastBASE = strtol(operand, NULL, 16);
@@ -360,6 +442,23 @@ int main(int argc, char **argv) {
                     lastX = strtol(operand, NULL, 16);
                     // printf("%x\n", lastX);
                 }
+
+
+                for (int i = 0; i < symbolRowCountBottom; i++){
+                    if (!(strcmp(symbolsBottomAddress[i], LOC_char))){
+                        snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
+                        char *address = (char*) malloc(6);
+                        strncpy(address, symbolsBottomConst[i] + 2, strlen(symbolsBottomConst[i]) - 3);
+                        fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[i], "BYTE", symbolsBottomConst[i], address);
+                        LOC += atoi(symbolsBottomLength[i]) / 2;
+                    }
+                }
+
+
+
+                // reset label variable
+                strcpy(label, "     ");
+
             }
             memset(test, 0, sizeof(test));
             // END OF "main" Execution
@@ -375,5 +474,6 @@ int main(int argc, char **argv) {
     // clsoe file
     fclose(out_ptr);
     fclose(ptr);
+    fclose(symptr);
     return 0;
 }
