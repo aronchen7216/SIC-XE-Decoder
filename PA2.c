@@ -214,7 +214,7 @@ int main(int argc, char **argv) {
     char mnemonic[7]; 
 //********************************************************************************************
 
-// THIS IS TO READ/RUN THE PROGAM
+// THIS IS TO READ/RUN THE "MAIN" PROGAM
 //********************************************************************************************
     // This while loop goes to the end of the file, processing lines based on their first character
     while ((line = fgetc(ptr)) != EOF) {
