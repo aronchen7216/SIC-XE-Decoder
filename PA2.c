@@ -124,11 +124,18 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
         operand = operand & 0xFFF;
 
         // skeleton for operand calculation
-        if (!strcmp(oat, "simple")) {
+        if (!strcmp(oat, "simple") || !strcmp(oat, "indirect")) {
             // ta = disp + (pc or b)
             if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
                 // ta = disp + pc
-                operand += (LOC + 3); // LOC hasn't been incremented when it is passed to this function
+                printf("b4 %x\n", operand);
+                
+                // operand =  (-operand);
+                operand = (0xFFF - operand) + 1;
+                printf("af %03x\n", operand);
+                operand = (LOC + 3) - operand; // LOC hasn't been incremented when it is passed to this function
+                // operand -= 0x1000;
+                // operand =  (operand - 1) + 0xFFF;
             } else if (!strcmp(taam, "base") || !strcmp(taam, "base_indexed")) {
                 operand += lastBASE;
             } else {
@@ -140,10 +147,12 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
             // indirect, memory access, ((TA))
         }
 
-        if (strlen(taam) > 9) {
-            // indexed so add lastx
-            operand += lastX;
-        }
+        // if (strlen(taam) > 9) {
+        //     // indexed so add lastx
+        //     operand += lastX;
+        // }
+        printf("after if loop %03x\n", operand);
+        operand = operand & 0xFFF;
         
         snprintf(operandChar, sizeof(operandChar), "%04X", operand);
         return operandChar;
@@ -255,6 +264,10 @@ int main(int argc, char **argv) {
     int rowCounter = 0;
     char symLine[100];
     char firstSixCharacters[6];
+
+    char LOC_char[10];
+
+
     while(fgets(symLine, sizeof(symLine), symptr)){
         char *to = (char*) malloc(6);
 		strncpy(to, symLine, 6);
@@ -359,7 +372,7 @@ int main(int argc, char **argv) {
 
                 const char *operand;
 
-                char LOC_char[10];
+                // char LOC_char[10];
     			snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
 
                 for (int i = 0; i < symbolRowCountTop; i++){
@@ -440,17 +453,18 @@ int main(int argc, char **argv) {
                     fprintf(out_ptr, "%17s%-12s%-12s\n", "", "BASE", operand);
                 } else if (!strcmp("LDX", mnemonic)) {
                     lastX = strtol(operand, NULL, 16);
-                    // printf("%x\n", lastX);
+                    printf("%x\n", lastX);
                 }
 
+                snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
 
-                for (int i = 0; i < symbolRowCountBottom; i++){
-                    if (!(strcmp(symbolsBottomAddress[i], LOC_char))){
-                        snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
+                for (int x = 0; x < symbolRowCountBottom; x++){
+                    if (!(strcmp(symbolsBottomAddress[x], LOC_char))){
                         char *address = (char*) malloc(6);
-                        strncpy(address, symbolsBottomConst[i] + 2, strlen(symbolsBottomConst[i]) - 3);
-                        fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[i], "BYTE", symbolsBottomConst[i], address);
-                        LOC += atoi(symbolsBottomLength[i]) / 2;
+                        strncpy(address, symbolsBottomConst[x] + 2, strlen(symbolsBottomConst[x]) - 3);
+                        fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[x], "BYTE", symbolsBottomConst[x], address);
+                        LOC += atoi(symbolsBottomLength[x]) / 2;
+                        i += atoi(symbolsBottomLength[x]);
                     }
                 }
 
