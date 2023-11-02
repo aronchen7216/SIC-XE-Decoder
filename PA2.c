@@ -126,18 +126,26 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
         // skeleton for operand calculation
         if (!strcmp(oat, "simple") || !strcmp(oat, "indirect")) {
             // ta = disp + (pc or b)
+            // printf("b4 %s\n", chunk);
+            // printf("b4 %x\n", operand);
+            // printf("LOC: %X\n", LOC);
             if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
                 // ta = disp + pc
-                printf("b4 %x\n", operand);
+                //printf("b4 %x\n", operand);
                 
                 // operand =  (-operand);
                 operand = (0xFFF - operand) + 1;
-                printf("af %03x\n", operand);
+                //printf("After two's complement %x\n", operand);
+                //printf("af %03x\n", operand);
                 operand = (LOC + 3) - operand; // LOC hasn't been incremented when it is passed to this function
                 // operand -= 0x1000;
                 // operand =  (operand - 1) + 0xFFF;
+                //printf("after %x\n", operand);
+                operand = operand & 0xFFF;
             } else if (!strcmp(taam, "base") || !strcmp(taam, "base_indexed")) {
+                printf("BASE: %lX\n", lastBASE);
                 operand += lastBASE;
+                printf("AFTER %x\n", operand);
             } else {
                 // direct, ta = disp
             }
@@ -151,8 +159,9 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
         //     // indexed so add lastx
         //     operand += lastX;
         // }
-        printf("after if loop %03x\n", operand);
-        operand = operand & 0xFFF;
+        //printf("after if loop %03x\n", operand);
+        
+        printf("AFTER AFTER %x\n", operand);
         
         snprintf(operandChar, sizeof(operandChar), "%04X", operand);
         return operandChar;
@@ -453,7 +462,7 @@ int main(int argc, char **argv) {
                     fprintf(out_ptr, "%17s%-12s%-12s\n", "", "BASE", operand);
                 } else if (!strcmp("LDX", mnemonic)) {
                     lastX = strtol(operand, NULL, 16);
-                    printf("%x\n", lastX);
+                    //printf("%x\n", lastX);
                 }
 
                 snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);

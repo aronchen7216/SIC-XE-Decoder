@@ -1,17 +1,4 @@
-CC = gcc
-CFLAGS = -g
+CFLAGS = -Wall -O2 -g
 
-TARGET = disassem
-DEPS = PA1.o
-
-$(TARGET): $(DEPS)
-	$(CC) $(CFLAGS) $(DEPS) -o $(TARGET)
-
-PA1.o: PA1.c
-	$(CC) $(CFLAGS) -c PA1.c
-
-test: $(TARGET)
-	./$(TARGET) test.obj
-
-clean:
-	rm -f $(DEPS) $(TARGET)
+code : PA2.c
+	cc PA2.c -o disassem
