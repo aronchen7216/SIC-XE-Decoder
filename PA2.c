@@ -116,8 +116,8 @@ const char *getTAAM(const char *test) {
     }
 }
 
-
-const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, int lastX, const char *oat, const char *taam) {
+// Getst the operand value based on PC/Base/Direct bits
+const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, int lastX, const char *oat, const char *taam, int isEndOfTLine, int nextLoc) {
     if (format == 3){
         char *operandChar = (char*) malloc(3);
         int operand = strtol(chunk, NULL, 16);
@@ -126,21 +126,14 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
         // skeleton for operand calculation
         if (!strcmp(oat, "simple") || !strcmp(oat, "indirect")) {
             // ta = disp + (pc or b)
-            // printf("b4 %s\n", chunk);
-            // printf("b4 %x\n", operand);
-            // printf("LOC: %X\n", LOC);
             if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
-                // ta = disp + pc
-                //printf("b4 %x\n", operand);
-                
-                // operand =  (-operand);
                 operand = (0xFFF - operand) + 1;
-                //printf("After two's complement %x\n", operand);
-                //printf("af %03x\n", operand);
-                operand = (LOC + 3) - operand; // LOC hasn't been incremented when it is passed to this function
-                // operand -= 0x1000;
-                // operand =  (operand - 1) + 0xFFF;
-                //printf("after %x\n", operand);
+                // if the program has reached the end of a T line, use the starting address of the following line for the PC value
+                if (isEndOfTLine == 0){
+                    operand = (LOC + 3) - operand; // LOC hasn't been incremented when it is passed to this function
+                } else {
+                    operand = nextLoc - operand;
+                }
                 operand = operand & 0xFFF;
             } else if (!strcmp(taam, "base") || !strcmp(taam, "base_indexed")) {
                 printf("BASE: %lX\n", lastBASE);
@@ -154,14 +147,6 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
         } else {
             // indirect, memory access, ((TA))
         }
-
-        // if (strlen(taam) > 9) {
-        //     // indexed so add lastx
-        //     operand += lastX;
-        // }
-        //printf("after if loop %03x\n", operand);
-        
-        printf("AFTER AFTER %x\n", operand);
         
         snprintf(operandChar, sizeof(operandChar), "%04X", operand);
         return operandChar;
@@ -227,10 +212,13 @@ int main(int argc, char **argv) {
 //********************************************************************************************    
     char locString[5];
     int LOC = 0x0;
+    int nextLoc = 0x0;
     char label[6] = "     ";
     char operand;
     long lastBASE = 0x0;
     long lastX = 0x0;
+    int nextNewStartingAddress = 1;
+    int isEndOfTLine = 0;
     // Allocate space for the mnemonic 
     char mnemonic[7]; 
 //********************************************************************************************
@@ -238,6 +226,35 @@ int main(int argc, char **argv) {
 // THIS IS TO READ/RUN THE "MAIN" PROGAM
 //********************************************************************************************
 
+    // Count the number of T lines to know how large to make the array to store the data
+    char firstLine[100];
+    int tLineCounter = 0;
+    while(fgets(firstLine, sizeof(firstLine), ptr)){
+        char *to = (char*) malloc(1);
+        if (!strcmp(to, "T")){
+            tLineCounter += 1;
+        }
+    }
+    fclose(ptr);
+
+    // Add the starting address of each T line to an array for use with PC-relative calculations
+    char allStartingAddresses[tLineCounter][5];
+    ptr = fopen(argv[1], "r");
+    int addrAddedCounter = 0;
+    while(fgets(firstLine, sizeof(firstLine), ptr)){
+        char *to = (char*) malloc(1);
+		strncpy(to, firstLine, 1);
+        if (!strcmp(to, "T")){
+		    strncpy(allStartingAddresses[addrAddedCounter], firstLine + 3, 4);
+            allStartingAddresses[addrAddedCounter][4] = *"\0";
+            addrAddedCounter += 1;
+        }
+    }
+
+    fclose(ptr);
+    ptr = fopen(argv[1], "r");
+
+    // Counts the number of rows in the symbol table so it can "dynamically" allocate the correct resources for the arrays
     int section = 0;
     while ((line = fgetc(symptr)) != EOF) {
         if (section == 0){
@@ -260,6 +277,7 @@ int main(int argc, char **argv) {
     symbolRowCountTop -= 3;
     symbolRowCountBottom -= 2;
 
+    // So many arrays for each column of the symbol table, separated by the first and section sections
     char symbolsTopChars[symbolRowCountTop][10];
     char symbolsTopAddress[symbolRowCountTop][10];
 
@@ -269,14 +287,11 @@ int main(int argc, char **argv) {
     char symbolsBottomAddress[symbolRowCountBottom][10];
 
     section = 0;
-    int lineCounter = 0;
     int rowCounter = 0;
     char symLine[100];
-    char firstSixCharacters[6];
-
     char LOC_char[10];
 
-
+    // Adds the symbol table data to the associated arrays
     while(fgets(symLine, sizeof(symLine), symptr)){
         char *to = (char*) malloc(6);
 		strncpy(to, symLine, 6);
@@ -339,25 +354,35 @@ int main(int argc, char **argv) {
             LOC = (int)strtol(locString, NULL, 16);
             // Getting the Object Code starting coulumn 10
             //********************************************************************** 
-            fseek(ptr, 2, SEEK_CUR);   
+            fseek(ptr, 2, SEEK_CUR);
             while ((c = fgetc(ptr)) != '\n') { 
                 if (c == EOF) {
-                    break; 
+                    break;
                 }
                 test[k] = c;
                 ++k;
 
             }
+
             // Start of "main" execution
             //******************************************************************************************************************
             // need this to ensure that it is null terminated, so its a valid String 
             test[k] = '\0';
-            // printf("THIS IS WHAT IS IN TEST: %s\n", test);
 
             int i = 0;
             // This while loop gets the menmonics first, determines if it's format 3,4 or 2, and then calls
             // the funcitons above, then prints the results out
             while (i < strlen(test)) {
+
+                if ((strlen(test) - i) < 7){
+                    nextLoc = (int)strtol(allStartingAddresses[nextNewStartingAddress], NULL, 16);
+                    nextNewStartingAddress += 1;
+                    isEndOfTLine = 1;
+                } else {
+                    isEndOfTLine = 0;
+                }
+
+                // printf("%d\n", (strlen(test) - i));
         
                 // Create a character array for 3 hex digits, then copy 3 char into formatChunk
                 char formatChunk[4]; 
@@ -387,10 +412,7 @@ int main(int argc, char **argv) {
                 for (int i = 0; i < symbolRowCountTop; i++){
                     if (!(strcmp(symbolsTopAddress[i], LOC_char))){
                         snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
-                        // label = symbolsTopChars[i];
                         strcpy(label, symbolsTopChars[i]);
-                        // fprintf(out_ptr, "%04X %s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[i], "BYTE", symbolsBottomConst[i]);
-                        // LOC += atoi(symbolsBottomLength[i]) / 2;
                     }
                 }
 
@@ -434,7 +456,7 @@ int main(int argc, char **argv) {
                     // Calls the function if it's format 3 and 4 and print out the result
                     const char *oat = getOAT(formatChunk);
                     const char *taam = getTAAM(formatChunk);
-                    operand = getOperand(chunk, format, LOC, lastBASE, lastX, oat, taam);
+                    operand = getOperand(chunk, format, LOC, lastBASE, lastX, oat, taam, isEndOfTLine, nextLoc);
 
                     // Operand Sign
                     char operandSign[2] = ""; 
@@ -452,32 +474,31 @@ int main(int argc, char **argv) {
                         fprintf(out_ptr, "%04X %-12s%-12s%s%-12s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
                     }
                     // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
-                    i += (format == 3) ? 6 : 8; 
-                    LOC += (format == 3) ? 3 : 4; 
+                    i += (format == 3) ? 6 : 8;
+                    LOC += (format == 3) ? 3 : 4;
                 }
 
-                // TODO: may need to alter if + is part of string at this point
+                // Store base register and index values
                 if (!strcmp("LDB", mnemonic)) {
                     lastBASE = strtol(operand, NULL, 16);
                     fprintf(out_ptr, "%17s%-12s%-12s\n", "", "BASE", operand);
                 } else if (!strcmp("LDX", mnemonic)) {
                     lastX = strtol(operand, NULL, 16);
-                    //printf("%x\n", lastX);
                 }
 
+                // Check for location in symbol table, output accordingly from earlier defined arrays
                 snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
-
                 for (int x = 0; x < symbolRowCountBottom; x++){
                     if (!(strcmp(symbolsBottomAddress[x], LOC_char))){
                         char *address = (char*) malloc(6);
                         strncpy(address, symbolsBottomConst[x] + 2, strlen(symbolsBottomConst[x]) - 3);
                         fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[x], "BYTE", symbolsBottomConst[x], address);
-                        LOC += atoi(symbolsBottomLength[x]) / 2;
+                        if (isEndOfTLine == 0){
+                            LOC += atoi(symbolsBottomLength[x]) / 2;
+                        }
                         i += atoi(symbolsBottomLength[x]);
                     }
                 }
-
-
 
                 // reset label variable
                 strcpy(label, "     ");
