@@ -129,16 +129,20 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
             if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
                 operand = (0xFFF - operand) + 1;
                 // if the program has reached the end of a T line, use the starting address of the following line for the PC value
-                if (isEndOfTLine == 0 || nextNewStartingAddress > tLineCounter){
+                if (isEndOfTLine == 0){
                     operand = (LOC + 3) - operand; // LOC hasn't been incremented when it is passed to this function
                 } else {
-                    operand = nextLoc - operand;
+                    if (nextNewStartingAddress - 1 >= tLineCounter){
+                        operand = (LOC + 3) - operand;
+                    } else {
+                        operand = nextLoc - operand;
+                    }
                 }
                 operand = operand & 0xFFF;
             } else if (!strcmp(taam, "base") || !strcmp(taam, "base_indexed")) {
-                printf("BASE: %lX\n", lastBASE);
+                // printf("BASE: %lX\n", lastBASE);
                 operand += lastBASE;
-                printf("AFTER %x\n", operand);
+                // printf("AFTER %x\n", operand);
             } else {
                 // direct, ta = disp
             }
@@ -231,11 +235,14 @@ int main(int argc, char **argv) {
     int tLineCounter = 0;
     while(fgets(firstLine, sizeof(firstLine), ptr)){
         char *to = (char*) malloc(1);
+        strncpy(to, firstLine, 1);
         if (!strcmp(to, "T")){
             tLineCounter += 1;
         }
     }
     fclose(ptr);
+
+    // printf("%d\n", tLineCounter);
 
     // Add the starting address of each T line to an array for use with PC-relative calculations
     char allStartingAddresses[tLineCounter][5];
