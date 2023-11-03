@@ -117,7 +117,7 @@ const char *getTAAM(const char *test) {
 }
 
 // Getst the operand value based on PC/Base/Direct bits
-const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, int lastX, const char *oat, const char *taam, int isEndOfTLine, int nextLoc) {
+const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, int lastX, const char *oat, const char *taam, int isEndOfTLine, int nextLoc, int nextNewStartingAddress, int tLineCounter) {
     if (format == 3){
         char *operandChar = (char*) malloc(3);
         int operand = strtol(chunk, NULL, 16);
@@ -129,7 +129,7 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
             if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
                 operand = (0xFFF - operand) + 1;
                 // if the program has reached the end of a T line, use the starting address of the following line for the PC value
-                if (isEndOfTLine == 0){
+                if (isEndOfTLine == 0 || nextNewStartingAddress > tLineCounter){
                     operand = (LOC + 3) - operand; // LOC hasn't been incremented when it is passed to this function
                 } else {
                     operand = nextLoc - operand;
@@ -479,7 +479,7 @@ int main(int argc, char **argv) {
                         // Calls the function if it's format 3 and 4 and print out the result
                         const char *oat = getOAT(formatChunk);
                         const char *taam = getTAAM(formatChunk);
-                        operand = getOperand(chunk, format, LOC, lastBASE, lastX, oat, taam, isEndOfTLine, nextLoc);
+                        operand = getOperand(chunk, format, LOC, lastBASE, lastX, oat, taam, isEndOfTLine, nextLoc, nextNewStartingAddress, tLineCounter);
 
                         // Operand Sign
                         char operandSign[2] = ""; 
