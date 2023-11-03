@@ -1,0 +1,9 @@
+Symbol  Address Flags:
+----------------------
+FIRST   000000  R
+
+Name    Lit_Const  Length Address:
+----------------------------------
+WDEV    X'000001'  6      0002D0
+HELL    X'B4'      2      0002C7
+WASS    X'00'      2      0002C8

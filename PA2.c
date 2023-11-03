@@ -321,6 +321,10 @@ int main(int argc, char **argv) {
         
     }
 
+    // for (int t=0; t < symbolRowCountBottom; t++){
+    //     printf("addr %s\n", symbolsBottomAddress[t]);
+    // }
+
 
     // This while loop goes to the end of the file, processing lines based on their first character
     while ((line = fgetc(ptr)) != EOF) {
@@ -406,7 +410,6 @@ int main(int argc, char **argv) {
 
                 const char *operand;
 
-                // char LOC_char[10];
     			snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
 
                 for (int i = 0; i < symbolRowCountTop; i++){
@@ -416,80 +419,13 @@ int main(int argc, char **argv) {
                     }
                 }
 
-
-                // It's format 2, so print only mnemonic and 4 hex digits
-                if (isFormat2) {
-                    // Create a  array for 4 hex digits, then copy the first 4 char from chunk
-                    char format2Chunk[5]; 
-                    strncpy(format2Chunk, chunk, 4);
-                    format2Chunk[4] = '\0';
-                    
-
-                    // Extract the relevant hex digit
-                    // Third hex digit represents bits 9 to 12
-                    char hexDigit = format2Chunk[2]; 
-
-                    // Map the hex digit to register names
-                    const char *registerName = "";
-                    switch (hexDigit) {
-                        case '0': registerName = "A"; break;
-                        case '1': registerName = "X"; break;
-                        case '2': registerName = "L"; break;
-                        case '3': registerName = "B"; break;
-                        case '4': registerName = "S"; break;
-                        case '5': registerName = "T"; break;
-                        case '6': registerName = "F"; break;
-                        case '7': registerName = "PC"; break;
-                        case '8': registerName = "SW"; break;
-                        // You might want to handle invalid cases as well
-                        default:  registerName = "Unknown"; break;
-                    }
-
-
-                    //Prints out the with the format 2
-                    fprintf(out_ptr, "%04X %-12s%-12s%-12s%-12s\n", LOC, label, mnemonic, registerName, format2Chunk);
-                    // Increment i by 4 and LOC by 2 (4 half bytes)
-                    i += 4;
-                    LOC += 2;
-        
-                } else {
-                    // Calls the function if it's format 3 and 4 and print out the result
-                    const char *oat = getOAT(formatChunk);
-                    const char *taam = getTAAM(formatChunk);
-                    operand = getOperand(chunk, format, LOC, lastBASE, lastX, oat, taam, isEndOfTLine, nextLoc);
-
-                    // Operand Sign
-                    char operandSign[2] = ""; 
-            
-                    // Checking what the Operand Sign should be by checkign the OAT "" by default
-                    if (strcmp(oat, "immediate") == 0) {
-                        strcpy(operandSign, "#");
-                    } else if (strcmp(oat, "indirect") == 0) {
-                        strcpy(operandSign, "@");
-                    }  
-
-                    if (format == 4) {
-                        fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
-                    } else {
-                        fprintf(out_ptr, "%04X %-12s%-12s%s%-12s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
-                    }
-                    // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
-                    i += (format == 3) ? 6 : 8;
-                    LOC += (format == 3) ? 3 : 4;
-                }
-
-                // Store base register and index values
-                if (!strcmp("LDB", mnemonic)) {
-                    lastBASE = strtol(operand, NULL, 16);
-                    fprintf(out_ptr, "%17s%-12s%-12s\n", "", "BASE", operand);
-                } else if (!strcmp("LDX", mnemonic)) {
-                    lastX = strtol(operand, NULL, 16);
-                }
-
+                int isConst = 0;
                 // Check for location in symbol table, output accordingly from earlier defined arrays
                 snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
                 for (int x = 0; x < symbolRowCountBottom; x++){
+                    // printf("addr %s   LOC %s \n", symbolsBottomAddress[x], LOC_char);
                     if (!(strcmp(symbolsBottomAddress[x], LOC_char))){
+                        isConst = 1;
                         char *address = (char*) malloc(6);
                         strncpy(address, symbolsBottomConst[x] + 2, strlen(symbolsBottomConst[x]) - 3);
                         fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[x], "BYTE", symbolsBottomConst[x], address);
@@ -500,8 +436,86 @@ int main(int argc, char **argv) {
                     }
                 }
 
-                // reset label variable
-                strcpy(label, "     ");
+                if (isConst == 0){
+
+                    // It's format 2, so print only mnemonic and 4 hex digits
+                    if (isFormat2) {
+                        // Create a  array for 4 hex digits, then copy the first 4 char from chunk
+                        char format2Chunk[5]; 
+                        strncpy(format2Chunk, chunk, 4);
+                        format2Chunk[4] = '\0';
+                        
+                        format = 2;
+
+                        // Extract the relevant hex digit
+                        // Third hex digit represents bits 9 to 12
+                        char hexDigit = format2Chunk[2]; 
+
+                        // Map the hex digit to register names
+                        const char *registerName = "";
+                        switch (hexDigit) {
+                            case '0': registerName = "A"; break;
+                            case '1': registerName = "X"; break;
+                            case '2': registerName = "L"; break;
+                            case '3': registerName = "B"; break;
+                            case '4': registerName = "S"; break;
+                            case '5': registerName = "T"; break;
+                            case '6': registerName = "F"; break;
+                            case '7': registerName = "PC"; break;
+                            case '8': registerName = "SW"; break;
+                            // You might want to handle invalid cases as well
+                            default:  registerName = "Unknown"; break;
+                        }
+
+
+                        //Prints out the with the format 2
+                        fprintf(out_ptr, "%04X %-12s%-12s%-12s%-12s\n", LOC, label, mnemonic, registerName, format2Chunk);
+                        // Increment i by 4 and LOC by 2 (4 half bytes)
+                        i += 4;
+                        printf("%d\n", format);
+                        // LOC += 2;
+            
+                    } else {
+                        // Calls the function if it's format 3 and 4 and print out the result
+                        const char *oat = getOAT(formatChunk);
+                        const char *taam = getTAAM(formatChunk);
+                        operand = getOperand(chunk, format, LOC, lastBASE, lastX, oat, taam, isEndOfTLine, nextLoc);
+
+                        // Operand Sign
+                        char operandSign[2] = ""; 
+                
+                        // Checking what the Operand Sign should be by checkign the OAT "" by default
+                        if (strcmp(oat, "immediate") == 0) {
+                            strcpy(operandSign, "#");
+                        } else if (strcmp(oat, "indirect") == 0) {
+                            strcpy(operandSign, "@");
+                        }  
+
+                        if (format == 4) {
+                            fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
+                        } else {
+                            fprintf(out_ptr, "%04X %-12s%-12s%s%-12s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
+                        }
+                        // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
+                        i += (format == 3) ? 6 : 8;
+                        // LOC += (format == 3) ? 3 : 4;
+                    }
+
+                    // Store base register and index values
+                    if (!strcmp("LDB", mnemonic)) {
+                        lastBASE = strtol(operand, NULL, 16);
+                        fprintf(out_ptr, "%17s%-12s%-12s\n", "", "BASE", operand);
+                    } else if (!strcmp("LDX", mnemonic)) {
+                        lastX = strtol(operand, NULL, 16);
+                    }
+
+
+
+                    LOC += format;
+
+                    // reset label variable
+                    strcpy(label, "     ");
+                }
 
             }
             memset(test, 0, sizeof(test));
