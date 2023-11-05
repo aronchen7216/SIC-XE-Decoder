@@ -123,6 +123,11 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
         int operand = strtol(chunk, NULL, 16);
         operand = operand & 0xFFF;
 
+        printf("THIS IS CHUNK %s\n", chunk);
+        printf("THIS IS FORMAT %d\n", format);
+        printf("THIS IS TAAM %s\n", taam);
+        printf("THIS IS OAT %s\n", oat);
+
         // skeleton for operand calculation
         if (!strcmp(oat, "simple") || !strcmp(oat, "indirect")) {
             // ta = disp + (pc or b)
@@ -148,6 +153,27 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
             }
         } else if (!strcmp(oat, "immediate")) {
             // ta = ta
+            printf("THIS GOT IN IMMEDIATE %s\n", chunk);
+            if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
+                operand = (0xFFF - operand) + 1;
+                // if the program has reached the end of a T line, use the starting address of the following line for the PC value
+                if (isEndOfTLine == 0){
+                    operand = (LOC + 3) - operand; // LOC hasn't been incremented when it is passed to this function
+                } else {
+                    if (nextNewStartingAddress - 1 >= tLineCounter){
+                        operand = (LOC + 3) - operand;
+                    } else {
+                        operand = nextLoc - operand;
+                    }
+                }
+                operand = operand & 0xFFF;
+            } else if (!strcmp(taam, "base") || !strcmp(taam, "base_indexed")) {
+                // printf("BASE: %lX\n", lastBASE);
+                operand += lastBASE;
+                // printf("AFTER %x\n", operand);
+            } else {
+                // direct, ta = disp
+            }
         } else {
             // indirect, memory access, ((TA))
         }

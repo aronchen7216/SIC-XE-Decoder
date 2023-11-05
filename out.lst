@@ -1,15 +1,15 @@
 0000 Assign      START       0           
 0000 FIRST       +LDB        #02C6       691002C6    
                  BASE        02C6        
-0004             STL         02C6        1722BF      
+0004             LDX         #02B7        0522B0      
 0007             LDA         @02C6        022FFF      
-02C7 HELL        BYTE        X'B4'       B4          
-02C8 WASS        BYTE        X'00'       00          
-02C9             SIO         #0500        F10500      
-02CC             LDA         0100        000100      
-02CF             LDX         #0000        050000      
-02D2             LDA         #032F        01E32F      
-02D5             +TIO        @2FFA       FA332FFA    
+02C7             CLEAR       A           B400        
+02C9 VDEV        BYTE        X'F1'       F1          
+02CA             LDX         #0000        050000      
+02CD             LDA         #0005        010005      
+02D0 WDEV        BYTE        X'000001'   000001      
+02D3             TD          02D0        E32FFA      
+02D6             JEQ         02D3        332FFA      
 02D9             LDCH        02C6        53AFEA      
 02DC             WD          02C9        DF2FEA      
 02DF             +LDA        02E3       031002E3    
