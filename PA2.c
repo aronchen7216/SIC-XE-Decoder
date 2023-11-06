@@ -123,19 +123,15 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
         int operand = strtol(chunk, NULL, 16);
         operand = operand & 0xFFF;
 
-        printf("THIS IS CHUNK %s\n", chunk);
-        printf("THIS IS FORMAT %d\n", format);
-        printf("THIS IS TAAM %s\n", taam);
-        printf("THIS IS OAT %s\n", oat);
-
-        // skeleton for operand calculation
+        // Operand calculation
         if (!strcmp(oat, "simple") || !strcmp(oat, "indirect")) {
             // ta = disp + (pc or b)
             if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
                 operand = (0xFFF - operand) + 1;
                 // if the program has reached the end of a T line, use the starting address of the following line for the PC value
                 if (isEndOfTLine == 0){
-                    operand = (LOC + 3) - operand; // LOC hasn't been incremented when it is passed to this function
+                    // LOC hasn't been incremented when it is passed to this function
+                    operand = (LOC + 3) - operand; 
                 } else {
                     if (nextNewStartingAddress - 1 >= tLineCounter){
                         operand = (LOC + 3) - operand;
@@ -145,20 +141,18 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
                 }
                 operand = operand & 0xFFF;
             } else if (!strcmp(taam, "base") || !strcmp(taam, "base_indexed")) {
-                // printf("BASE: %lX\n", lastBASE);
                 operand += lastBASE;
-                // printf("AFTER %x\n", operand);
             } else {
                 // direct, ta = disp
             }
         } else if (!strcmp(oat, "immediate")) {
             // ta = ta
-            printf("THIS GOT IN IMMEDIATE %s\n", chunk);
             if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
                 operand = (0xFFF - operand) + 1;
                 // if the program has reached the end of a T line, use the starting address of the following line for the PC value
                 if (isEndOfTLine == 0){
-                    operand = (LOC + 3) - operand; // LOC hasn't been incremented when it is passed to this function
+                    // LOC hasn't been incremented when it is passed to this function
+                    operand = (LOC + 3) - operand; 
                 } else {
                     if (nextNewStartingAddress - 1 >= tLineCounter){
                         operand = (LOC + 3) - operand;
@@ -168,9 +162,7 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
                 }
                 operand = operand & 0xFFF;
             } else if (!strcmp(taam, "base") || !strcmp(taam, "base_indexed")) {
-                // printf("BASE: %lX\n", lastBASE);
                 operand += lastBASE;
-                // printf("AFTER %x\n", operand);
             } else {
                 // direct, ta = disp
             }
@@ -268,8 +260,6 @@ int main(int argc, char **argv) {
     }
     fclose(ptr);
 
-    // printf("%d\n", tLineCounter);
-
     // Add the starting address of each T line to an array for use with PC-relative calculations
     char allStartingAddresses[tLineCounter][5];
     ptr = fopen(argv[1], "r");
@@ -354,11 +344,6 @@ int main(int argc, char **argv) {
         
     }
 
-    // for (int t=0; t < symbolRowCountBottom; t++){
-    //     printf("addr %s\n", symbolsBottomAddress[t]);
-    // }
-
-
     // This while loop goes to the end of the file, processing lines based on their first character
     while ((line = fgetc(ptr)) != EOF) {
         if (line == 'H') {
@@ -378,6 +363,7 @@ int main(int argc, char **argv) {
                     break; 
                 }
             }
+
         // Prints out the Start File thing
         fprintf(out_ptr, "%04lX %-12s%-12s%-12lX\n", strtol(startAddress, NULL, 16), pName, "START", strtol(startAddress, NULL, 16));
         } else if (line == 'T') { 
@@ -418,8 +404,6 @@ int main(int argc, char **argv) {
                 } else {
                     isEndOfTLine = 0;
                 }
-
-                // printf("%d\n", (strlen(test) - i));
         
                 // Create a character array for 3 hex digits, then copy 3 char into formatChunk
                 char formatChunk[4]; 
@@ -456,7 +440,6 @@ int main(int argc, char **argv) {
                 // Check for location in symbol table, output accordingly from earlier defined arrays
                 snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
                 for (int x = 0; x < symbolRowCountBottom; x++){
-                    // printf("addr %s   LOC %s \n", symbolsBottomAddress[x], LOC_char);
                     if (!(strcmp(symbolsBottomAddress[x], LOC_char))){
                         isConst = 1;
                         char *address = (char*) malloc(6);
@@ -500,13 +483,10 @@ int main(int argc, char **argv) {
                             default:  registerName = "Unknown"; break;
                         }
 
-
                         //Prints out the with the format 2
                         fprintf(out_ptr, "%04X %-12s%-12s%-12s%-12s\n", LOC, label, mnemonic, registerName, format2Chunk);
                         // Increment i by 4 and LOC by 2 (4 half bytes)
                         i += 4;
-                        printf("%d\n", format);
-                        // LOC += 2;
             
                     } else {
                         // Calls the function if it's format 3 and 4 and print out the result
@@ -531,7 +511,6 @@ int main(int argc, char **argv) {
                         }
                         // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
                         i += (format == 3) ? 6 : 8;
-                        // LOC += (format == 3) ? 3 : 4;
                     }
 
                     // Store base register and index values
@@ -541,8 +520,6 @@ int main(int argc, char **argv) {
                     } else if (!strcmp("LDX", mnemonic)) {
                         lastX = strtol(operand, NULL, 16);
                     }
-
-
 
                     LOC += format;
 
@@ -558,8 +535,6 @@ int main(int argc, char **argv) {
     }
 //********************************************************************************************
     
-
-
     fprintf(out_ptr, "%17s%-12s%-12s\n", "", "END", pName);
 
     // clsoe file
