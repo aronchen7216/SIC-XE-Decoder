@@ -1,6 +1,11 @@
 Symbol  Value   Flags:
 -----------------------
 FIRST   000000  R
+LOOP    00000A  R
+COUNT   00001A  R
+TABLE   00001D  R
+TABLE2  00178D  R
+TOTAL   002EFD  R
 
 Name    Lit_Const  Length Address:
-----------------------------------
+---------------------------------

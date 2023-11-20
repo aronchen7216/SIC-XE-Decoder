@@ -1,11 +1,15 @@
 0000 SUM     START   0                         
-0000 FIRST   LDX     #0           050000      
-0003         LDA     001A         032014      
-0006         +LDB    #178D        6910178D    
-             BASE    178D                    
-000A         ADD     001D         1BA010      
-000D         ADD     178D         1BC000      
-0010         TIX     001A         2F2007      
-0013         JLT     000A         3B2FF4      
-0016         +STA    2EFD         0F102EFD    
+0000 FIRST   LDX     #0            050000      
+0003         LDA     COUNT         032014      
+0006         +LDB    #TABLE2       6910178D    
+             BASE    TABLE2                    
+000A LOOP    ADD     TABLE,X       1BA010      
+000D         ADD     TABLE2,X      1BC000      
+0010         TIX     COUNT         2F2007      
+0013         JLT     LOOP          3B2FF4      
+0016         +STA    TOTAL         0F102EFD    
+001A COUNT   RESB    3                         
+001D TABLE   RESB    6000                      
+178D TABLE2  RESB    6000                      
+2EFD TOTAL   RESB    3                         
              END     SUM                       

@@ -210,7 +210,6 @@ const static char *mnemonics[] = {
 
 
 int main(int argc, char **argv) {
-
 // Declaring for I/O
 //********************************************************************************************
     // reads in the file
@@ -329,16 +328,25 @@ int main(int argc, char **argv) {
                 strcpy(symbolsTopAddress[rowCounter], token);
                 rowCounter += 1;
             } else if (section == 1) {
-                char* token = strtok(symLine, " ");
-                strcpy(symbolsBottomChars[rowCounter], token);
-                token = strtok(NULL, " ");
-                strcpy(symbolsBottomConst[rowCounter], token);
-                token = strtok(NULL, " ");
-                strcpy(symbolsBottomLength[rowCounter], token);
-                token = strtok(NULL, " ");
-                strcpy(symbolsBottomAddress[rowCounter], token);
-                symbolsBottomAddress[rowCounter][ 6 ] = *"\0";
-                rowCounter += 1;
+                char* token = strtok(symLine, " \t"); // Handles spaces and tabs
+                if (token && token[0] != ' ' && token[0] != '\t') { // If 'Name' is not empty
+                    strcpy(symbolsBottomChars[rowCounter], token);
+                } else { // If 'Name' field is empty
+                    strcpy(symbolsBottomChars[rowCounter], ""); // Set as empty string or a placeholder
+                }
+                for (int i = 0; i < 3; i++) { // For the next three tokens
+                    token = strtok(NULL, " \t");
+                    if (token == NULL) {
+                        fprintf(stderr, "Unexpected end of line or missing field in symbol table.\n");
+                        break; // Handle error or exit
+                    }
+                    switch(i) {
+                        case 0: strcpy(symbolsBottomConst[rowCounter], token); break;
+                        case 1: strcpy(symbolsBottomLength[rowCounter], token); break;
+                        case 2: strcpy(symbolsBottomAddress[rowCounter], token); symbolsBottomAddress[rowCounter][6] = '\0'; break;
+                    }
+                }
+                rowCounter++;
             }
         }
         
@@ -357,6 +365,9 @@ int main(int argc, char **argv) {
             // Null-terminate to make it a valid string
             startAddress[6] = '\0'; 
             
+            //TODO 
+            // THIS IS WHERE WE NEED TO GET THE LENGHT OF THE FIlE
+
             // Skip the rest of the line
             while ((line = fgetc(ptr)) != '\n') {
                 if (line == EOF) {
@@ -401,6 +412,10 @@ int main(int argc, char **argv) {
                     nextLoc = (int)strtol(allStartingAddresses[nextNewStartingAddress], NULL, 16);
                     nextNewStartingAddress += 1;
                     isEndOfTLine = 1;
+                    //this part is for the annoying sym shit
+                    // if(nextNewStartingAddress == allStartingAddresses){
+                    //     endof
+                    // }
                 } else {
                     isEndOfTLine = 0;
                 }
@@ -520,9 +535,32 @@ int main(int argc, char **argv) {
                     } else if (!strcmp("LDX", mnemonic)) {
                         lastX = strtol(operand, NULL, 16);
                     }
-
+                    
+                    int last_PC = LOC; //THIS IS FOR SYMTABLE
+                    
                     LOC += format;
-
+                    
+                    // THIS IS FOR SYMTABLE
+                    printf("%04X %s\n", LOC, chunk);
+                    int i = 0;
+                    int bytesToReserve = 0;
+                    while(LOC == symbolsTopAddress[i]){  // make sure i + 1 exsist
+                        if(LOC < symbolsTopAddress[i+1]){ 
+                            int symbolAddressValue = (int)strtol(symbolsTopAddress[i], NULL, 16);
+                            bytesToReserve = LOC - symbolAddressValue;
+                        } else{
+                            int symbolAddressValue = (int)strtol(symbolsTopAddress[i], NULL, 16);
+                            bytesToReserve = symbolAddressValue - last_PC; 
+                        }
+                        strcpy(label, symbolsTopChars[i]);
+                        fprintf(symbolsTopAddress[i], label, "RESB", bytesToReserve);
+                        i++;
+                    // TODO figure out where to increment LOC
+                        if(symbolsTopAddress[i] > LOC){
+                            break;
+                        }
+                    }
+                    //******************************************************************
                     // reset label variable
                     strcpy(label, "     ");
                 }
