@@ -594,51 +594,51 @@ int main(int argc, char **argv) {
                     last_PC = LOC; //THIS IS FOR SYMTABLE
 
                     
-                    // currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
-                    // nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
-                    // printf("%d %d\n", symbolRowCountTop, arrIndex);
+                    currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
+                    nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
+                    printf("%d %d\n", symbolRowCountTop, arrIndex);
 
-                    // // should only run when EOF
-                    // // if (nextSymbolAddressValue >= LOC && isEndOfTLine == 1 && symbolRowCountTop + 1 == nextNewStartingAddress){
-                    // if (nextSymbolAddressValue >= LOC && isEndOfTLine == 1){
-                    //     bytesToReserve = 0;
-                    //     arrIndex += 1;
+                    // should only run when EOF
+                    // if (nextSymbolAddressValue >= LOC && isEndOfTLine == 1 && symbolRowCountTop + 1 == nextNewStartingAddress){
+                    if (nextSymbolAddressValue >= LOC && isEndOfTLine == 1){
+                        bytesToReserve = 0;
+                        arrIndex += 1;
                         
-                    //     while(last_PC == strtol(symbolsTopAddress[arrIndex], NULL, 16) && arrIndex <= symbolRowCountTop - 1){
-                    //         currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
-                    //         nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
-                    //         printf("%04X %04X %04X %d\n", last_PC, nextSymbolAddressValue, nextSymbolAddressValue, arrIndex);
+                        while(last_PC == strtol(symbolsTopAddress[arrIndex], NULL, 16) && arrIndex <= symbolRowCountTop - 1){
+                            currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
+                            nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
+                            printf("%04X %04X %04X %d\n", last_PC, nextSymbolAddressValue, nextSymbolAddressValue, arrIndex);
 
-                    //         // printf("else\n");
-                    //         // nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
-                    //         bytesToReserve = nextSymbolAddressValue - currentSymbolAddressValue; 
+                            // printf("else\n");
+                            // nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
+                            bytesToReserve = nextSymbolAddressValue - currentSymbolAddressValue; 
                         
-                    //         // if(last_PC < nextSymbolAddressValue){ 
-                    //         //     printf("if\n");
-                    //         //     currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
-                    //         //     bytesToReserve = last_PC - currentSymbolAddressValue;
-                    //         // } else{
-                    //         //     printf("else\n");
-                    //         //     nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
-                    //         //     bytesToReserve = nextSymbolAddressValue - last_PC; 
-                    //         // }
-                    //         // strcpy(label, symbolsTopChars[arrIndex]);
-                    //         fprintf(out_ptr, "%04X %-12s%-12s%-04d\n", last_PC, symbolsTopChars[arrIndex], "RESB", bytesToReserve);
+                            // if(last_PC < nextSymbolAddressValue){ 
+                            //     printf("if\n");
+                            //     currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
+                            //     bytesToReserve = last_PC - currentSymbolAddressValue;
+                            // } else{
+                            //     printf("else\n");
+                            //     nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
+                            //     bytesToReserve = nextSymbolAddressValue - last_PC; 
+                            // }
+                            // strcpy(label, symbolsTopChars[arrIndex]);
+                            fprintf(out_ptr, "%04X %-12s%-12s%-04d\n", last_PC, symbolsTopChars[arrIndex], "RESB", bytesToReserve);
                             
-                    //         last_PC += bytesToReserve;
-                    //         arrIndex += 1;
+                            last_PC += bytesToReserve;
+                            arrIndex += 1;
 
-                    //         // if(strtol(symbolsTopAddress[arrIndex + 1], NULL, 16) > last_PC){
-                    //         //     printf("break\n");
-                    //         //     LOC = last_PC;
-                    //         //     break;
-                    //         // } else {
-                    //         //     arrIndex += 1;
-                    //         // // }
-                    //         // currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
-                    //         // nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
-                    //     }
-                    // }
+                            // if(strtol(symbolsTopAddress[arrIndex + 1], NULL, 16) > last_PC){
+                            //     printf("break\n");
+                            //     LOC = last_PC;
+                            //     break;
+                            // } else {
+                            //     arrIndex += 1;
+                            // // }
+                            // currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
+                            // nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
+                        }
+                    }
 
 
 
