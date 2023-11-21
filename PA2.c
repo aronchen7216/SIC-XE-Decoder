@@ -282,7 +282,7 @@ int main(int argc, char **argv) {
         if (section == 0){
             if (line == *"\n"){
                 symbolRowCountTop += 1;
-            } else if (line == *"N"){
+            } else if (line == *"i"){
                 section += 1;
             }
         } else {
@@ -312,6 +312,7 @@ int main(int argc, char **argv) {
     int rowCounter = 0;
     char symLine[100];
     char LOC_char[10];
+    // int numSymbolsTop = 0;
 
     // Adds the symbol table data to the associated arrays
     while(fgets(symLine, sizeof(symLine), symptr)){
@@ -327,6 +328,7 @@ int main(int argc, char **argv) {
                 token = strtok(NULL, " ");
                 strcpy(symbolsTopAddress[rowCounter], token);
                 rowCounter += 1;
+                // numSymbolsTop += 1;
             } else if (section == 1) {
                 char* token = strtok(symLine, " \t"); // Handles spaces and tabs
                 if (token && token[0] != ' ' && token[0] != '\t') { // If 'Name' is not empty
@@ -519,10 +521,42 @@ int main(int argc, char **argv) {
                             strcpy(operandSign, "@");
                         }  
 
+                        
+                        
                         if (format == 4) {
+                                // Variable to hold the matching symbol character
+                            //     char *matchingSymbol = NULL;
+                            //     int operandValue = (int)strtol(operand, NULL, 16);
+                            //     // Search through symbolsTopAddress
+                            //     for (int q = 0; q < numSymbolsTop; q++) {
+                            //         int addressValue = (int)strtol(symbolsTopAddress[q], NULL, 16);
+                            //         //printf("%s\n", symbolsTopAddress[q]);
+                            //         if (operandValue == addressValue) {
+                            //             // If a match is found, use the corresponding symbolsTopChars
+                            //             matchingSymbol = symbolsTopChars[q];
+                            //             break;
+                            //         }
+                            //     }
+                            // fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol ? matchingSymbol : "", chunk);
+                            // //fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol, chunk);
                             fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
                         } else {
-                            fprintf(out_ptr, "%04X %-12s%-12s%s%-12s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
+                            //     // Variable to hold the matching symbol character
+                            //     char *matchingSymbol = NULL;
+                            //     int operandValue = (int)strtol(operand, NULL, 16);
+                            //     // Search through symbolsTopAddress
+                            //     for (int w = 0; w < numSymbolsTop; w++) {
+                            //         int addressValue = (int)strtol(symbolsTopAddress[w], NULL, 16);
+                            //         // printf("%s\n", symbolsTopAddress[w]);
+                            //         if (operandValue == addressValue) {
+                            //             // If a match is found, use the corresponding symbolsTopChars
+                            //             matchingSymbol = symbolsTopChars[w];
+                            //             break;
+                            //         }
+                            //     }
+                            // //fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol ? matchingSymbol : "", chunk);
+                            // fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol, chunk);
+                            fprintf(out_ptr, "%04X %-12s%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
                         }
                         // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
                         i += (format == 3) ? 6 : 8;
@@ -536,33 +570,7 @@ int main(int argc, char **argv) {
                         lastX = strtol(operand, NULL, 16);
                     }
                     
-                    int last_PC = LOC; //THIS IS FOR SYMTABLE
-                    
                     LOC += format;
-                    
-                    // THIS IS FOR SYMTABLE
-                    printf("%04X %s\n", LOC, chunk);
-                    int i = 0;
-                    int bytesToReserve = 0;
-                    while(LOC == symbolsTopAddress[i]){  // make sure i + 1 exsist
-                        if(LOC < symbolsTopAddress[i+1]){ 
-                            int symbolAddressValue = (int)strtol(symbolsTopAddress[i], NULL, 16);
-                            bytesToReserve = LOC - symbolAddressValue;
-                        } else{
-                            int symbolAddressValue = (int)strtol(symbolsTopAddress[i], NULL, 16);
-                            bytesToReserve = symbolAddressValue - last_PC; 
-                        }
-                        strcpy(label, symbolsTopChars[i]);
-                        fprintf(symbolsTopAddress[i], label, "RESB", bytesToReserve);
-                        i++;
-                    // TODO figure out where to increment LOC
-                        if(symbolsTopAddress[i] > LOC){
-                            break;
-                        }
-                    }
-                    //******************************************************************
-                    // reset label variable
-                    strcpy(label, "     ");
                 }
 
             }
