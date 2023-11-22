@@ -129,7 +129,8 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
             if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
                 operand = (0xFFF - operand) + 1;
                 // if the program has reached the end of a T line, use the starting address of the following line for the PC value
-                if (isEndOfTLine == 0){
+                // if (isEndOfTLine == 0){
+                if (true) {
                     // LOC hasn't been incremented when it is passed to this function
                     operand = (LOC + 3) - operand; 
                 } else {
@@ -150,7 +151,8 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
             if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
                 operand = (0xFFF - operand) + 1;
                 // if the program has reached the end of a T line, use the starting address of the following line for the PC value
-                if (isEndOfTLine == 0){
+                // if (isEndOfTLine == 0){
+                if (true) {
                     // LOC hasn't been incremented when it is passed to this function
                     operand = (LOC + 3) - operand; 
                 } else {
@@ -227,6 +229,7 @@ int main(int argc, char **argv) {
     int k = 0;
     int symbolRowCountTop = 0;
     int symbolRowCountBottom = 0;
+    char pLength[7];
 //********************************************************************************************
 
 // Declaring for main function to run
@@ -240,8 +243,10 @@ int main(int argc, char **argv) {
     long lastX = 0x0;
     int nextNewStartingAddress = 1;
     int isEndOfTLine = 0;
-    int arrIndex = 1;
+    int topSymbolsIndex = 0;
+    int bottomSymbolsIndex = 0;
     long last_PC = 0;
+    int LTORG_isSet = 0;
     // Allocate space for the mnemonic 
     char mnemonic[7]; 
 //********************************************************************************************
@@ -294,8 +299,6 @@ int main(int argc, char **argv) {
         }
     }
 
-    printf("%d \n", symbolRowCountTop);
-
     fclose(symptr);
     symptr = fopen(argv[2], "r");
 
@@ -307,8 +310,8 @@ int main(int argc, char **argv) {
     char symbolsTopChars[symbolRowCountTop][10];
     char symbolsTopAddress[symbolRowCountTop][10];
 
-    char symbolsBottomChars[symbolRowCountBottom][10];
-    char symbolsBottomConst[symbolRowCountBottom][10];
+    char symbolsBottomChars[symbolRowCountBottom][11];
+    char symbolsBottomConst[symbolRowCountBottom][11];
     char symbolsBottomLength[symbolRowCountBottom][10];
     char symbolsBottomAddress[symbolRowCountBottom][10];
 
@@ -332,25 +335,22 @@ int main(int argc, char **argv) {
                 strcpy(symbolsTopAddress[rowCounter], token);
                 rowCounter += 1;
             } else if (section == 1) {
-                char* token = strtok(symLine, " \t"); // Handles spaces and tabs
-                if (token && token[0] != ' ' && token[0] != '\t') { // If 'Name' is not empty
+                char* token = strtok(symLine, " ");
+                if(token[0] == *"X" || token[0] == *"="){
+                    strcpy(symbolsBottomChars[rowCounter], "");
+                    symbolsBottomChars[rowCounter][ 9 ] = *"\0";
+                    strcpy(symbolsBottomConst[rowCounter], token);
+                } else {
                     strcpy(symbolsBottomChars[rowCounter], token);
-                } else { // If 'Name' field is empty
-                    strcpy(symbolsBottomChars[rowCounter], ""); // Set as empty string or a placeholder
+                    token = strtok(NULL, " ");
+                    strcpy(symbolsBottomConst[rowCounter], token);
                 }
-                for (int i = 0; i < 3; i++) { // For the next three tokens
-                    token = strtok(NULL, " \t");
-                    if (token == NULL) {
-                        fprintf(stderr, "Unexpected end of line or missing field in symbol table.\n");
-                        break; // Handle error or exit
-                    }
-                    switch(i) {
-                        case 0: strcpy(symbolsBottomConst[rowCounter], token); break;
-                        case 1: strcpy(symbolsBottomLength[rowCounter], token); break;
-                        case 2: strcpy(symbolsBottomAddress[rowCounter], token); symbolsBottomAddress[rowCounter][6] = '\0'; break;
-                    }
-                }
-                rowCounter++;
+                token = strtok(NULL, " ");
+                strcpy(symbolsBottomLength[rowCounter], token);
+                token = strtok(NULL, " ");
+                strcpy(symbolsBottomAddress[rowCounter], token);
+                symbolsBottomAddress[rowCounter][ 6 ] = *"\0";
+                rowCounter += 1;
             }
         }
         
@@ -371,6 +371,8 @@ int main(int argc, char **argv) {
             
             //TODO 
             // THIS IS WHERE WE NEED TO GET THE LENGHT OF THE FIlE
+            fread(pLength, sizeof(char), 6, ptr);
+            pLength[6] = '\0';
 
             // Skip the rest of the line
             while ((line = fgetc(ptr)) != '\n') {
@@ -427,46 +429,61 @@ int main(int argc, char **argv) {
 
 
                 // THIS IS FOR SYMTABLE
-                    
+                
                     
                 long bytesToReserve = 0;
-                long currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
-                long nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
+                long currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
+                long nextSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16);
                 // printf("%04X %04X %04X\n", last_PC, LOC, nextLoc);
                 // printf("%x %x\n", currentSymbolAddressValue, nextSymbolAddressValue);
-                // printf("%s %s\n", symbolsTopAddress[arrIndex], symbolsTopAddress[arrIndex + 1]);
+                // printf("%s %s\n", symbolsTopAddress[topSymbolsIndex], symbolsTopAddress[topSymbolsIndex + 1]);
 
-                while(last_PC == strtol(symbolsTopAddress[arrIndex], NULL, 16)){
+                // printf("loc, lastpc, bottomSymbolsIndex: %x %x %x\n", LOC, last_PC, bottomSymbolsIndex);
+
+                while(last_PC == strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16)){
                     // printf("here if  lastpc: %x\n", last_PC);
-                    printf("%04X %04X %04X %d\n", last_PC, LOC, nextSymbolAddressValue, arrIndex);
+                    // printf("%04X %04X %04X %d\n", last_PC, LOC, nextSymbolAddressValue, topSymbolsIndex);
                 
-                    if(LOC < nextSymbolAddressValue){ 
-                        printf("if\n");
-                        currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
-                        bytesToReserve = LOC - currentSymbolAddressValue;
-                    } else{
-                        printf("else\n");
-                        nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
-                        bytesToReserve = nextSymbolAddressValue - last_PC; 
+                    if (nextSymbolAddressValue != 0){
+                        if(LOC < nextSymbolAddressValue){ 
+                            // printf("if\n");
+                            currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
+                            bytesToReserve = LOC - currentSymbolAddressValue;
+                        } else{
+                            // printf("else\n");
+                            nextSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16);
+                            bytesToReserve = nextSymbolAddressValue - last_PC; 
+                        }
+                    } else { // nextvalue is 0, so at end of symtable, use current value and subtract that from 
+                        currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
+                        bytesToReserve = strtol(symbolsBottomAddress[bottomSymbolsIndex], NULL, 16) - currentSymbolAddressValue;
                     }
-                    strcpy(label, symbolsTopChars[arrIndex]);
-                    fprintf(out_ptr, "%04X %-12s%-12s%-04d\n", last_PC, symbolsTopChars[arrIndex], "RESB", bytesToReserve);
-                    
-                    // printf("loc b4 %d\n", LOC);
-                    // // LOC += bytesToReserve;
-                    // printf("loc af %d\n", LOC);
-                    last_PC += bytesToReserve;
-                    // TODO figure out where to increment LOC
-                    if(strtol(symbolsTopAddress[arrIndex + 1], NULL, 16) > last_PC){
-                        printf("break\n");
-                        LOC = last_PC;
-                        // last_PC = LOC;
-                        break;
+
+                    if (bytesToReserve > 0){
+                        strcpy(label, symbolsTopChars[topSymbolsIndex]);
+                        fprintf(out_ptr, "%04X %-12s%-12s%-04d\n", last_PC, symbolsTopChars[topSymbolsIndex], "RESB", bytesToReserve);
+                        
+                        // printf("loc b4 %d\n", LOC);
+                        // // LOC += bytesToReserve;
+                        // printf("loc af %d\n", LOC);
+                        last_PC += bytesToReserve;
+                        // TODO figure out where to increment LOC
+                        if(strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16) > last_PC){
+                            
+                            LOC = last_PC;
+                            // printf("break + loc: %x\n", LOC);
+                            // reset label variable
+                            strcpy(label, "     ");
+                            // last_PC = LOC;
+                            break;
+                        } else {
+                            topSymbolsIndex += 1;
+                        }
+                        currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
+                        nextSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16);
                     } else {
-                        arrIndex += 1;
+                        break;
                     }
-                    currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
-                    nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
                 }
 
 
@@ -499,8 +516,10 @@ int main(int argc, char **argv) {
                     if (!(strcmp(symbolsTopAddress[i], LOC_char))){
                         snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
                         strcpy(label, symbolsTopChars[i]);
+                        topSymbolsIndex += 1;
                     }
                 }
+
 
                 int isConst = 0;
                 // Check for location in symbol table, output accordingly from earlier defined arrays
@@ -509,14 +528,30 @@ int main(int argc, char **argv) {
                     if (!(strcmp(symbolsBottomAddress[x], LOC_char))){
                         isConst = 1;
                         char *address = (char*) malloc(6);
-                        strncpy(address, symbolsBottomConst[x] + 2, strlen(symbolsBottomConst[x]) - 3);
-                        fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[x], "BYTE", symbolsBottomConst[x], address);
-                        if (isEndOfTLine == 0){
+                        if (!strcmp(symbolsBottomChars[x], "")){
+                            strncpy(address, symbolsBottomConst[x] + 3, strlen(symbolsBottomConst[x]) - 4);
+                            if (LTORG_isSet == 0){
+                                fprintf(out_ptr, "%-4s %-12s%-12s\n", "", "", "LTORG");
+                                LTORG_isSet = 1;
+                            }
+                            // printf("symb: %s\n", symbolsBottomConst[x]);
+                            fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[x], "*", symbolsBottomConst[x], address);
+                            bottomSymbolsIndex += 1;
+                        } else {
+                            strncpy(address, symbolsBottomConst[x] + 2, strlen(symbolsBottomConst[x]) - 3);
+                            fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[x], "BYTE", symbolsBottomConst[x], address);
+                        }
+                        // if (isEndOfTLine == 0){
+                        if (true) {
                             LOC += atoi(symbolsBottomLength[x]) / 2;
                         }
                         i += atoi(symbolsBottomLength[x]);
+                        topSymbolsIndex += 1;
                     }
                 }
+
+                
+
 
                 if (isConst == 0){
 
@@ -571,81 +606,106 @@ int main(int argc, char **argv) {
                         }  
 
                         if (format == 4) {
-                            fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
+                            // Variable to hold the matching symbol character
+                            char *matchingSymbol = NULL;
+                            int operandValue = (int)strtol(operand, NULL, 16);
+                            // Search through symbolsTopAddress
+                            for (int q = 0; q < symbolRowCountTop; q++) {
+                                int addressValue = (int)strtol(symbolsTopAddress[q], NULL, 16);
+                                //printf("%s\n", symbolsTopAddress[q]);
+                                if (operandValue == addressValue) {
+                                    // If a match is found, use the corresponding symbolsTopChars
+                                    matchingSymbol = symbolsTopChars[q];
+                                    break;
+                                }
+                            }
+                            fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol ? matchingSymbol : operand, chunk);
+                            //fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol, chunk);
                         } else {
-                            fprintf(out_ptr, "%04X %-12s%-12s%s%-12s%-12s\n", LOC, label, mnemonic, operandSign, operand, chunk);
+                            // Variable to hold the matching symbol character
+                            char *matchingSymbol = NULL;
+                            int operandValue = (int)strtol(operand, NULL, 16);
+                            // Search through symbolsTopAddress
+                            for (int w = 0; w < symbolRowCountTop; w++) {
+                                int addressValue = (int)strtol(symbolsTopAddress[w], NULL, 16);
+                                // printf("%s\n", symbolsTopAddress[w]);
+                                if (operandValue == addressValue && operandValue != 0) {
+                                    // If a match is found, use the corresponding symbolsTopChars
+                                    matchingSymbol = symbolsTopChars[w];
+                                    break;
+                                }
+                            }
+                            fprintf(out_ptr, "%04X %-12s%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol ? matchingSymbol : operand, chunk);
+                            // fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol, chunk);
                         }
                         // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
                         i += (format == 3) ? 6 : 8;
                     }
 
+
                     // Store base register and index values
                     if (!strcmp("LDB", mnemonic)) {
+                        // Variable to hold the matching symbol character
+                        char *matchingSymbol = NULL;
+                        int operandValue = (int)strtol(operand, NULL, 16);
+                        // Search through symbolsTopAddress
+                        for (int w = 0; w < symbolRowCountTop; w++) {
+                            int addressValue = (int)strtol(symbolsTopAddress[w], NULL, 16);
+                            // printf("%s\n", symbolsTopAddress[w]);
+                            if (operandValue == addressValue) {
+                                // If a match is found, use the corresponding symbolsTopChars
+                                matchingSymbol = symbolsTopChars[w];
+                                break;
+                            }
+                        }
                         lastBASE = strtol(operand, NULL, 16);
-                        fprintf(out_ptr, "%17s%-12s%-12s\n", "", "BASE", operand);
+                        fprintf(out_ptr, "%17s%-12s%-12s\n", "", "BASE", matchingSymbol);
                     } else if (!strcmp("LDX", mnemonic)) {
                         lastX = strtol(operand, NULL, 16);
                     }
-                    
-                    
-                    
+
                     LOC += format;
-                    
-                    last_PC = LOC; //THIS IS FOR SYMTABLE
-
-                    
-                    currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
-                    nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
-                    printf("%d %d\n", symbolRowCountTop, arrIndex);
-
-                    // should only run when EOF
-                    // if (nextSymbolAddressValue >= LOC && isEndOfTLine == 1 && symbolRowCountTop + 1 == nextNewStartingAddress){
-                    if (nextSymbolAddressValue >= LOC && isEndOfTLine == 1){
-                        bytesToReserve = 0;
-                        arrIndex += 1;
-                        
-                        while(last_PC == strtol(symbolsTopAddress[arrIndex], NULL, 16) && arrIndex <= symbolRowCountTop - 1){
-                            currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
-                            nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
-                            printf("%04X %04X %04X %d\n", last_PC, nextSymbolAddressValue, nextSymbolAddressValue, arrIndex);
-
-                            // printf("else\n");
-                            // nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
-                            bytesToReserve = nextSymbolAddressValue - currentSymbolAddressValue; 
-                        
-                            // if(last_PC < nextSymbolAddressValue){ 
-                            //     printf("if\n");
-                            //     currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
-                            //     bytesToReserve = last_PC - currentSymbolAddressValue;
-                            // } else{
-                            //     printf("else\n");
-                            //     nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
-                            //     bytesToReserve = nextSymbolAddressValue - last_PC; 
-                            // }
-                            // strcpy(label, symbolsTopChars[arrIndex]);
-                            fprintf(out_ptr, "%04X %-12s%-12s%-04d\n", last_PC, symbolsTopChars[arrIndex], "RESB", bytesToReserve);
-                            
-                            last_PC += bytesToReserve;
-                            arrIndex += 1;
-
-                            // if(strtol(symbolsTopAddress[arrIndex + 1], NULL, 16) > last_PC){
-                            //     printf("break\n");
-                            //     LOC = last_PC;
-                            //     break;
-                            // } else {
-                            //     arrIndex += 1;
-                            // // }
-                            // currentSymbolAddressValue = strtol(symbolsTopAddress[arrIndex], NULL, 16);
-                            // nextSymbolAddressValue = strtol(symbolsTopAddress[arrIndex + 1], NULL, 16);
-                        }
-                    }
-
-
-
-                    //******************************************************************
-                    // reset label variable
-                    strcpy(label, "     ");
                 }
+
+                last_PC = LOC;
+                // printf("topSymbolsIndex %d\n", topSymbolsIndex);
+                
+                currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
+                nextSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16);
+                // printf("nextsym, loc, iseol, tline, nextnewstart: %x %x %d %d %d\n", nextSymbolAddressValue, LOC, isEndOfTLine, tLineCounter + 1, nextNewStartingAddress);
+
+                // should only run when EOF
+                if (nextSymbolAddressValue >= LOC && isEndOfTLine == 1 && tLineCounter + 1 == nextNewStartingAddress){
+                // if (nextSymbolAddressValue >= LOC && isEndOfTLine == 1){
+                    bytesToReserve = 0;
+                    // topSymbolsIndex += 1;
+
+                    printf("lsat pc, arr, top - 1: %x %d %d\n", last_PC, topSymbolsIndex, symbolRowCountTop - 1);
+                    
+                    while(last_PC == strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16) && topSymbolsIndex <= symbolRowCountTop - 1){
+                        currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
+                        nextSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16);
+                        // printf("%04X %04X %04X %d\n", last_PC, nextSymbolAddressValue, nextSymbolAddressValue, topSymbolsIndex);
+
+                        if (currentSymbolAddressValue == 0 || nextSymbolAddressValue == 0){
+                            bytesToReserve = strtol(pLength, NULL, 16) - last_PC;
+                        } else {
+                            bytesToReserve = nextSymbolAddressValue - currentSymbolAddressValue;
+                        }
+                    
+                        fprintf(out_ptr, "%04X %-12s%-12s%-04d\n", last_PC, symbolsTopChars[topSymbolsIndex], "RESB", bytesToReserve);
+                        
+                        last_PC += bytesToReserve;
+                        topSymbolsIndex += 1;
+                    }
+                }
+
+
+
+                //******************************************************************
+                // reset label variable
+                strcpy(label, "     ");
+                
 
             }
             memset(test, 0, sizeof(test));
