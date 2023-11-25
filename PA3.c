@@ -516,7 +516,10 @@ int main(int argc, char **argv) {
                     if (!(strcmp(symbolsTopAddress[i], LOC_char))){
                         snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
                         strcpy(label, symbolsTopChars[i]);
-                        topSymbolsIndex += 1;
+                        // topSymbolsIndex += 1;
+                        topSymbolsIndex = i + 1;
+                        // printf("topindex, i %d, %d\n", topSymbolsIndex, i);
+                        break;
                     }
                 }
 
@@ -546,7 +549,7 @@ int main(int argc, char **argv) {
                             LOC += atoi(symbolsBottomLength[x]) / 2;
                         }
                         i += atoi(symbolsBottomLength[x]);
-                        topSymbolsIndex += 1;
+                        // topSymbolsIndex += 1;
                     }
                 }
 
@@ -619,6 +622,15 @@ int main(int argc, char **argv) {
                                     break;
                                 }
                             }
+                            for (int b = 0; b < symbolRowCountBottom; b++) {
+                                int addressValue = (int)strtol(symbolsBottomAddress[b], NULL, 16);
+                                //printf("%s\n", symbolsTopAddress[q]);
+                                if (operandValue == addressValue) {
+                                    // If a match is found, use the corresponding symbolsTopChars
+                                    matchingSymbol = symbolsBottomConst[b];
+                                    break;
+                                }
+                            }
                             fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol ? matchingSymbol : operand, chunk);
                             //fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol, chunk);
                         } else {
@@ -635,7 +647,20 @@ int main(int argc, char **argv) {
                                     break;
                                 }
                             }
-                            fprintf(out_ptr, "%04X %-12s%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol ? matchingSymbol : operand, chunk);
+                            for (int c = 0; c < symbolRowCountBottom; c++) {
+                                int addressValue = (int)strtol(symbolsBottomAddress[c], NULL, 16);
+                                //printf("%s\n", symbolsTopAddress[q]);
+                                if (operandValue == addressValue && strcmp(symbolsBottomConst[c], "")) {
+                                    // If a match is found, use the corresponding symbolsTopChars
+                                    matchingSymbol = symbolsBottomConst[c];
+                                    break;
+                                }
+                            }
+                            // char indexed = "";
+                            // if (strlen(taam) > 8){
+                            //     strcopy
+                            // }
+                            fprintf(out_ptr, "%04X %-12s%-11s%s%-3s%-8s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol ? matchingSymbol : operand, strlen(taam) > 8 ? ",X" : "", chunk);
                             // fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol, chunk);
                         }
                         // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
@@ -674,14 +699,14 @@ int main(int argc, char **argv) {
                 nextSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16);
                 // printf("nextsym, loc, iseol, tline, nextnewstart: %x %x %d %d %d\n", nextSymbolAddressValue, LOC, isEndOfTLine, tLineCounter + 1, nextNewStartingAddress);
 
+                
+
                 // should only run when EOF
-                if (nextSymbolAddressValue >= LOC && isEndOfTLine == 1 && tLineCounter + 1 == nextNewStartingAddress){
+                if ((nextSymbolAddressValue >= LOC || currentSymbolAddressValue >= LOC) && isEndOfTLine == 1 && tLineCounter + 1 == nextNewStartingAddress){
                 // if (nextSymbolAddressValue >= LOC && isEndOfTLine == 1){
                     bytesToReserve = 0;
                     // topSymbolsIndex += 1;
-
-                    printf("lsat pc, arr, top - 1: %x %d %d\n", last_PC, topSymbolsIndex, symbolRowCountTop - 1);
-                    
+                    // printf("lsat pc, arr, top - 1: %x %d %d\n", last_PC, topSymbolsIndex, symbolRowCountTop - 1);
                     while(last_PC == strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16) && topSymbolsIndex <= symbolRowCountTop - 1){
                         currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
                         nextSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16);
