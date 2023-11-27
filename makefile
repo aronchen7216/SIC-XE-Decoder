@@ -1,4 +1,4 @@
 CFLAGS = -Wall -O2 -g
 
-code : PA2.c
-	cc PA2.c -o disassem
+code : PA3.c
+	cc PA3.c -o disassem

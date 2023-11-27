@@ -129,7 +129,6 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
             if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
                 operand = (0xFFF - operand) + 1;
                 // if the program has reached the end of a T line, use the starting address of the following line for the PC value
-                // if (isEndOfTLine == 0){
                 if (true) {
                     // LOC hasn't been incremented when it is passed to this function
                     operand = (LOC + 3) - operand; 
@@ -151,7 +150,6 @@ const char *getOperand(const char *chunk, int format, int LOC, long lastBASE, in
             if (!strcmp(taam, "pc") || !strcmp(taam, "pc_indexed")) {
                 operand = (0xFFF - operand) + 1;
                 // if the program has reached the end of a T line, use the starting address of the following line for the PC value
-                // if (isEndOfTLine == 0){
                 if (true) {
                     // LOC hasn't been incremented when it is passed to this function
                     operand = (LOC + 3) - operand; 
@@ -369,8 +367,6 @@ int main(int argc, char **argv) {
             // Null-terminate to make it a valid string
             startAddress[6] = '\0'; 
             
-            //TODO 
-            // THIS IS WHERE WE NEED TO GET THE LENGHT OF THE FIlE
             fread(pLength, sizeof(char), 6, ptr);
             pLength[6] = '\0';
 
@@ -414,47 +410,30 @@ int main(int argc, char **argv) {
             // the funcitons above, then prints the results out
             while (i < strlen(test)) {
 
-                // TODO changed this may have broke things but it never was anything but 0 before, was < 7
                 if ((strlen(test) - i) <= 8){
                     nextLoc = (int)strtol(allStartingAddresses[nextNewStartingAddress], NULL, 16);
                     nextNewStartingAddress += 1;
                     isEndOfTLine = 1;
-                    //this part is for the annoying sym shit
-                    // if(nextNewStartingAddress == allStartingAddresses){
-                    //     endof
-                    // }
                 } else {
                     isEndOfTLine = 0;
                 }
-
-
-                // THIS IS FOR SYMTABLE
                 
-                    
+                
+                // Creates RESB lines and calculates bytes to reserve
                 long bytesToReserve = 0;
                 long currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
                 long nextSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16);
-                // printf("%04X %04X %04X\n", last_PC, LOC, nextLoc);
-                // printf("%x %x\n", currentSymbolAddressValue, nextSymbolAddressValue);
-                // printf("%s %s\n", symbolsTopAddress[topSymbolsIndex], symbolsTopAddress[topSymbolsIndex + 1]);
-
-                // printf("loc, lastpc, bottomSymbolsIndex: %x %x %x\n", LOC, last_PC, bottomSymbolsIndex);
 
                 while(last_PC == strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16)){
-                    // printf("here if  lastpc: %x\n", last_PC);
-                    // printf("%04X %04X %04X %d\n", last_PC, LOC, nextSymbolAddressValue, topSymbolsIndex);
-                
                     if (nextSymbolAddressValue != 0){
-                        if(LOC < nextSymbolAddressValue){ 
-                            // printf("if\n");
+                        if(LOC < nextSymbolAddressValue){
                             currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
                             bytesToReserve = LOC - currentSymbolAddressValue;
                         } else{
-                            // printf("else\n");
                             nextSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16);
                             bytesToReserve = nextSymbolAddressValue - last_PC; 
                         }
-                    } else { // nextvalue is 0, so at end of symtable, use current value and subtract that from 
+                    } else { // nextvalue is 0, so at end of symtable, use current value and subtract from that  
                         currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
                         bytesToReserve = strtol(symbolsBottomAddress[bottomSymbolsIndex], NULL, 16) - currentSymbolAddressValue;
                     }
@@ -462,19 +441,11 @@ int main(int argc, char **argv) {
                     if (bytesToReserve > 0){
                         strcpy(label, symbolsTopChars[topSymbolsIndex]);
                         fprintf(out_ptr, "%04lX %-12s%-12s%ld\n", last_PC, symbolsTopChars[topSymbolsIndex], "RESB", bytesToReserve);
-                        
-                        // printf("loc b4 %d\n", LOC);
-                        // // LOC += bytesToReserve;
-                        // printf("loc af %d\n", LOC);
                         last_PC += bytesToReserve;
-                        // TODO figure out where to increment LOC
                         if(strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16) > last_PC){
-                            
                             LOC = last_PC;
-                            // printf("break + loc: %x\n", LOC);
                             // reset label variable
                             strcpy(label, "     ");
-                            // last_PC = LOC;
                             break;
                         } else {
                             topSymbolsIndex += 1;
@@ -485,8 +456,6 @@ int main(int argc, char **argv) {
                         break;
                     }
                 }
-
-
         
                 // Create a character array for 3 hex digits, then copy 3 char into formatChunk
                 char formatChunk[4]; 
@@ -516,9 +485,7 @@ int main(int argc, char **argv) {
                     if (!(strcmp(symbolsTopAddress[i], LOC_char))){
                         snprintf(LOC_char, sizeof(LOC_char), "%06X", LOC);
                         strcpy(label, symbolsTopChars[i]);
-                        // topSymbolsIndex += 1;
                         topSymbolsIndex = i + 1;
-                        // printf("topindex, i %d, %d\n", topSymbolsIndex, i);
                         break;
                     }
                 }
@@ -537,27 +504,21 @@ int main(int argc, char **argv) {
                                 fprintf(out_ptr, "%-4s %-12s%-12s\n", "", "", "LTORG");
                                 LTORG_isSet = 1;
                             }
-                            // printf("symb: %s\n", symbolsBottomConst[x]);
                             fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[x], "*", symbolsBottomConst[x], address);
                             bottomSymbolsIndex += 1;
                         } else {
                             strncpy(address, symbolsBottomConst[x] + 2, strlen(symbolsBottomConst[x]) - 3);
                             fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[x], "BYTE", symbolsBottomConst[x], address);
                         }
-                        // if (isEndOfTLine == 0){
                         if (true) {
                             LOC += atoi(symbolsBottomLength[x]) / 2;
                         }
                         i += atoi(symbolsBottomLength[x]);
-                        // topSymbolsIndex += 1;
                     }
                 }
 
-                
-
 
                 if (isConst == 0){
-
                     // It's format 2, so print only mnemonic and 4 hex digits
                     if (isFormat2) {
                         // Create a  array for 4 hex digits, then copy the first 4 char from chunk
@@ -615,7 +576,6 @@ int main(int argc, char **argv) {
                             // Search through symbolsTopAddress
                             for (int q = 0; q < symbolRowCountTop; q++) {
                                 int addressValue = (int)strtol(symbolsTopAddress[q], NULL, 16);
-                                //printf("%s\n", symbolsTopAddress[q]);
                                 if (operandValue == addressValue) {
                                     // If a match is found, use the corresponding symbolsTopChars
                                     matchingSymbol = symbolsTopChars[q];
@@ -624,7 +584,6 @@ int main(int argc, char **argv) {
                             }
                             for (int b = 0; b < symbolRowCountBottom; b++) {
                                 int addressValue = (int)strtol(symbolsBottomAddress[b], NULL, 16);
-                                //printf("%s\n", symbolsTopAddress[q]);
                                 if (operandValue == addressValue) {
                                     // If a match is found, use the corresponding symbolsTopChars
                                     if (strcmp(symbolsBottomChars[b], "")){
@@ -634,13 +593,8 @@ int main(int argc, char **argv) {
                                     }
                                     break;
                                 }
-                                // if (!strcmp(symbolsBottomConst[b], operand)){
-                                //     matchingSymbol = symbolsBottomConst[b];
-                                //     break;
-                                // }
                             }
                             fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol ? matchingSymbol : operand, chunk);
-                            //fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol, chunk);
                         } else {
                             // Variable to hold the matching symbol character
                             char *matchingSymbol = NULL;
@@ -648,7 +602,6 @@ int main(int argc, char **argv) {
                             // Search through symbolsTopAddress
                             for (int w = 0; w < symbolRowCountTop; w++) {
                                 int addressValue = (int)strtol(symbolsTopAddress[w], NULL, 16);
-                                // printf("%s\n", symbolsTopAddress[w]);
                                 if (operandValue == addressValue && operandValue != 0) {
                                     // If a match is found, use the corresponding symbolsTopChars
                                     matchingSymbol = symbolsTopChars[w];
@@ -657,7 +610,6 @@ int main(int argc, char **argv) {
                             }
                             for (int c = 0; c < symbolRowCountBottom; c++) {
                                 int addressValue = (int)strtol(symbolsBottomAddress[c], NULL, 16);
-                                //printf("%s\n", symbolsTopAddress[q]);
                                 if (operandValue == addressValue && strcmp(symbolsBottomConst[c], "")) {
                                     // If a match is found, use the corresponding symbolsTopChars
                                     if (strcmp(symbolsBottomChars[c], "")){
@@ -668,13 +620,11 @@ int main(int argc, char **argv) {
                                     break;
                                 }
                             }
-                            // printf("operadn: %s\n", operand);
                             if (strcmp(operandSign, "#")){
                                 fprintf(out_ptr, "%04X %-12s%-11s%s%-3s%-8s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol ? matchingSymbol : operand, strlen(taam) > 8 ? ",X" : "", chunk);
                             } else {
                                 fprintf(out_ptr, "%04X %-12s%-11s%s%-3c%-8s%-12s\n", LOC, label, mnemonic, operandSign, operand[3], strlen(taam) > 8 ? ",X" : "", chunk);
                             }
-                            // fprintf(out_ptr, "%04X %-12s+%-11s%s%-11s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol, chunk);
                         }
                         // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
                         i += (format == 3) ? 6 : 8;
@@ -689,7 +639,6 @@ int main(int argc, char **argv) {
                         // Search through symbolsTopAddress
                         for (int w = 0; w < symbolRowCountTop; w++) {
                             int addressValue = (int)strtol(symbolsTopAddress[w], NULL, 16);
-                            // printf("%s\n", symbolsTopAddress[w]);
                             if (operandValue == addressValue) {
                                 // If a match is found, use the corresponding symbolsTopChars
                                 matchingSymbol = symbolsTopChars[w];
@@ -706,24 +655,16 @@ int main(int argc, char **argv) {
                 }
 
                 last_PC = LOC;
-                // printf("topSymbolsIndex %d\n", topSymbolsIndex);
                 
                 currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
                 nextSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16);
-                // printf("nextsym, loc, iseol, tline, nextnewstart: %x %x %d %d %d\n", nextSymbolAddressValue, LOC, isEndOfTLine, tLineCounter + 1, nextNewStartingAddress);
 
-                
-
-                // should only run when EOF
+                // Creates RESB lines when at the end of the file
                 if ((nextSymbolAddressValue >= LOC || currentSymbolAddressValue >= LOC) && isEndOfTLine == 1 && tLineCounter + 1 == nextNewStartingAddress){
-                // if (nextSymbolAddressValue >= LOC && isEndOfTLine == 1){
                     bytesToReserve = 0;
-                    // topSymbolsIndex += 1;
-                    // printf("lsat pc, arr, top - 1: %x %d %d\n", last_PC, topSymbolsIndex, symbolRowCountTop - 1);
                     while(last_PC == strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16) && topSymbolsIndex <= symbolRowCountTop - 1){
                         currentSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex], NULL, 16);
                         nextSymbolAddressValue = strtol(symbolsTopAddress[topSymbolsIndex + 1], NULL, 16);
-                        // printf("%04X %04X %04X %d\n", last_PC, nextSymbolAddressValue, nextSymbolAddressValue, topSymbolsIndex);
 
                         if (currentSymbolAddressValue == 0 || nextSymbolAddressValue == 0){
                             bytesToReserve = strtol(pLength, NULL, 16) - last_PC;
