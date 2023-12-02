@@ -336,12 +336,14 @@ int main(int argc, char **argv) {
                 char* token = strtok(symLine, " ");
                 if(token[0] == *"X" || token[0] == *"="){
                     strcpy(symbolsBottomChars[rowCounter], "");
-                    symbolsBottomChars[rowCounter][ 9 ] = *"\0";
+                    // symbolsBottomChars[rowCounter][ 10 ] = *"\0";
                     strcpy(symbolsBottomConst[rowCounter], token);
+                    
                 } else {
                     strcpy(symbolsBottomChars[rowCounter], token);
                     token = strtok(NULL, " ");
                     strcpy(symbolsBottomConst[rowCounter], token);
+                    // printf("cars: %s\n", symbolsBottomConst[rowCounter]);
                 }
                 token = strtok(NULL, " ");
                 strcpy(symbolsBottomLength[rowCounter], token);
@@ -598,6 +600,8 @@ int main(int argc, char **argv) {
                         } else {
                             // Variable to hold the matching symbol character
                             char *matchingSymbol = NULL;
+                            // printf("chars %s\n", symbolsBottomChars[1]);
+                            // printf("sym b4: %s\n", matchingSymbol);
                             int operandValue = (int)strtol(operand, NULL, 16);
                             // Search through symbolsTopAddress
                             for (int w = 0; w < symbolRowCountTop; w++) {
@@ -608,22 +612,30 @@ int main(int argc, char **argv) {
                                     break;
                                 }
                             }
+                            
                             for (int c = 0; c < symbolRowCountBottom; c++) {
                                 int addressValue = (int)strtol(symbolsBottomAddress[c], NULL, 16);
                                 if (operandValue == addressValue && strcmp(symbolsBottomConst[c], "")) {
                                     // If a match is found, use the corresponding symbolsTopChars
-                                    if (strcmp(symbolsBottomChars[c], "")){
+                                    if (strcmp(symbolsBottomChars[c], "")){ // has name - chars != ""
                                         matchingSymbol = symbolsBottomChars[c];
-                                    } else {
+                                        printf("c, count: %d, %s\n", c, symbolsBottomChars[c]);
+                                    } else { // no name
                                         matchingSymbol = symbolsBottomConst[c];
                                     }
                                     break;
                                 }
                             }
+                            
                             if (strcmp(operandSign, "#")){
                                 fprintf(out_ptr, "%04X %-12s%-11s%s%-3s%-8s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol ? matchingSymbol : operand, strlen(taam) > 8 ? ",X" : "", chunk);
-                            } else {
-                                fprintf(out_ptr, "%04X %-12s%-11s%s%-3c%-8s%-12s\n", LOC, label, mnemonic, operandSign, operand[3], strlen(taam) > 8 ? ",X" : "", chunk);
+                            } else { // if # present
+                                if (matchingSymbol){
+                                    printf("chunk, operand, matchsym: %s, %s, %s\n", chunk, operand, matchingSymbol);
+                                    fprintf(out_ptr, "%04X %-12s%-11s%s%-3s%-8s%-12s\n", LOC, label, mnemonic, operandSign, matchingSymbol ? matchingSymbol : operand, strlen(taam) > 8 ? ",X" : "", chunk);
+                                } else {
+                                    fprintf(out_ptr, "%04X %-12s%-11s%s%-3c%-8s%-12s\n", LOC, label, mnemonic, operandSign, operand[3], strlen(taam) > 8 ? ",X" : "", chunk);
+                                }
                             }
                         }
                         // Increment by 6 or 8 depending on the format, as well as LOC by as many half bytes
@@ -676,6 +688,29 @@ int main(int argc, char **argv) {
                         
                         last_PC += bytesToReserve;
                         topSymbolsIndex += 1;
+
+                        // snprintf(LOC_char, sizeof(LOC_char), "%06X", last_PC);
+                        // for (int x = 0; x < symbolRowCountBottom; x++){
+                        //     if (!(strcmp(symbolsBottomAddress[x], LOC_char))){
+                        //         char *address = (char*) malloc(6);
+                        //         if (!strcmp(symbolsBottomChars[x], "")){
+                        //             strncpy(address, symbolsBottomConst[x] + 3, strlen(symbolsBottomConst[x]) - 4);
+                        //             if (LTORG_isSet == 0){
+                        //                 fprintf(out_ptr, "%-4s %-12s%-12s\n", "", "", "LTORG");
+                        //                 LTORG_isSet = 1;
+                        //             }
+                        //             fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[x], "*", symbolsBottomConst[x], address);
+                        //             bottomSymbolsIndex += 1;
+                        //         } else {
+                        //             strncpy(address, symbolsBottomConst[x] + 2, strlen(symbolsBottomConst[x]) - 3);
+                        //             fprintf(out_ptr, "%04X %s%-12s%-12s%-12s%-12s\n", LOC, "", symbolsBottomChars[x], "BYTE", symbolsBottomConst[x], address);
+                        //         }
+                        //         if (true) {
+                        //             LOC += atoi(symbolsBottomLength[x]) / 2;
+                        //         }
+                        //         i += atoi(symbolsBottomLength[x]);
+                        //     }
+                        // }
                     }
                 }
 
